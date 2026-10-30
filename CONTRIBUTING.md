@@ -4,7 +4,7 @@
 
 - Windows 11；
 - PowerShell 7；
-- Rust stable MSVC toolchain；
+- Rust 1.88+ stable MSVC toolchain；
 - `rustfmt` 与 `clippy`；
 - Git。
 
