@@ -76,6 +76,29 @@ function Write-Utf8NoBomText {
     [System.IO.File]::WriteAllText($Path, $Text, $encoding)
 }
 
+function Write-SpdxLicenseText {
+    param(
+        [string]$LicenseId,
+        [string]$Destination
+    )
+    $normalizedId = $LicenseId.TrimEnd('+')
+    if ($normalizedId -notmatch '^[A-Za-z0-9][A-Za-z0-9.-]*$') {
+        return $false
+    }
+    $uri = "https://raw.githubusercontent.com/spdx/license-list-data/v3.27.0/text/$normalizedId.txt"
+    try {
+        $response = Invoke-WebRequest -Uri $uri -UseBasicParsing -TimeoutSec 30
+        if ($response.StatusCode -ne 200 -or [string]::IsNullOrWhiteSpace($response.Content)) {
+            return $false
+        }
+        Write-Utf8NoBomText -Path $Destination -Text $response.Content
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
 New-Item -ItemType Directory -Force -Path $OutputRoot | Out-Null
 Assert-ChildPath -Parent $OutputRoot -Child $PackageRoot
 Assert-ChildPath -Parent $OutputRoot -Child $ZipPath
@@ -288,18 +311,37 @@ foreach ($dependency in $externalPackages) {
             } |
             Sort-Object Name
     )
-    if ($licenseFiles.Count -lt 1) {
-        throw "No license text found for dependency: $($dependency.name) $($dependency.version)"
-    }
     $safeName = (($dependency.name -replace '[^A-Za-z0-9._-]', '_') + "-" +
         ($dependency.version -replace '[^A-Za-z0-9._-]', '_'))
     $destinationRoot = Join-Path $licenseRoot $safeName
     New-Item -ItemType Directory -Force -Path $destinationRoot | Out-Null
     $relativeFiles = @()
+    $textProvenance = "crate-source"
     foreach ($licenseFile in $licenseFiles) {
         $destination = Join-Path $destinationRoot $licenseFile.Name
         Copy-Item -LiteralPath $licenseFile.FullName -Destination $destination
         $relativeFiles += $licenseFile.Name
+    }
+    if ($relativeFiles.Count -lt 1) {
+        # Some crates publish a valid SPDX expression but omit license files
+        # from the crate archive. Include the pinned SPDX canonical text for
+        # every license alternative in that expression.
+        $textProvenance = "spdx-canonical-v3.27.0"
+        $licenseIds = [regex]::Matches($dependencyLicense, '[A-Za-z0-9][A-Za-z0-9.+-]*') |
+            ForEach-Object { $_.Value.TrimEnd('+') } |
+            Where-Object { $_ -notin @("AND", "OR", "WITH") } |
+            Select-Object -Unique
+        foreach ($licenseId in $licenseIds) {
+            $licenseName = "SPDX-$licenseId.txt"
+            $destination = Join-Path $destinationRoot $licenseName
+            if (-not (Write-SpdxLicenseText -LicenseId $licenseId -Destination $destination)) {
+                throw "No license text found for dependency: $($dependency.name) $($dependency.version) ($licenseId)"
+            }
+            $relativeFiles += $licenseName
+        }
+    }
+    if ($relativeFiles.Count -lt 1) {
+        throw "No license text found for dependency: $($dependency.name) $($dependency.version)"
     }
     $licensePackages += [ordered]@{
         name = $dependency.name
@@ -308,6 +350,7 @@ foreach ($dependency in $externalPackages) {
         source = $dependency.source
         files = $relativeFiles
         directory = $safeName
+        textProvenance = $textProvenance
     }
 }
 $licenseManifest = [ordered]@{
