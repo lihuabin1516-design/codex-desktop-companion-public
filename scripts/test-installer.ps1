@@ -7,7 +7,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $PackageRoot = [System.IO.Path]::GetFullPath($PackageRoot)
-$TestRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("codex-ccpanes-installer-test-" + [guid]::NewGuid().ToString("N"))
+$TestRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("codex-paneforge-installer-test-" + [guid]::NewGuid().ToString("N"))
 $InstallRoot = Join-Path $TestRoot "install"
 
 function Assert-TestPath {
@@ -15,7 +15,7 @@ function Assert-TestPath {
     $full = [System.IO.Path]::GetFullPath($Path)
     $temp = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd('\') + '\'
     if (-not $full.StartsWith($temp, [System.StringComparison]::OrdinalIgnoreCase) -or
-        (Split-Path -Leaf $TestRoot) -notlike "codex-ccpanes-installer-test-*") {
+        (Split-Path -Leaf $TestRoot) -notlike "codex-paneforge-installer-test-*") {
         throw "Unsafe installer test path: $full"
     }
 }
@@ -32,8 +32,8 @@ function Write-Utf8NoBomText {
 Assert-TestPath -Path $TestRoot
 New-Item -ItemType Directory -Path $TestRoot | Out-Null
 try {
-    $installer = Join-Path $PackageRoot "Install-CodexCCPanes.ps1"
-    $uninstaller = Join-Path $PackageRoot "Uninstall-CodexCCPanes.ps1"
+    $installer = Join-Path $PackageRoot "Install-CodexPaneForge.ps1"
+    $uninstaller = Join-Path $PackageRoot "Uninstall-CodexPaneForge.ps1"
 
     & $installer -InstallRoot $InstallRoot -SkipShortcuts -SkipRegistry -Quiet | Out-Null
     $statePath = Join-Path $InstallRoot "install-state.json"
@@ -114,7 +114,7 @@ try {
         }
     }
     $coordinatorVersion = & $state.coordinatorExecutable --version
-    if ($LASTEXITCODE -ne 0 -or $coordinatorVersion -notmatch '^codex-ccpanes-coordinator\s+') {
+    if ($LASTEXITCODE -ne 0 -or $coordinatorVersion -notmatch '^codex-paneforge-coordinator\s+') {
         throw "Installed coordinator version contract failed."
     }
     $lifecycleDescribeJson = & $coordinatorLifecycle -Action Describe -InstallRoot $InstallRoot -Json -Quiet
@@ -130,7 +130,7 @@ try {
     $lifecycleVerify = $lifecycleVerifyJson | ConvertFrom-Json
     if ($lifecycleVerify.ok -ne $true -or
         $lifecycleVerify.startsBackgroundCoordinator -ne $false -or
-        $lifecycleVerify.version -notmatch '^codex-ccpanes-coordinator\s+') {
+        $lifecycleVerify.version -notmatch '^codex-paneforge-coordinator\s+') {
         throw "Coordinator lifecycle verify contract failed."
     }
     $coordinatorDataDir = Join-Path $InstallRoot "data\coordinator"
@@ -149,7 +149,7 @@ try {
         throw "Installed MCP descriptor command failed with exit code $LASTEXITCODE"
     }
     $mcpDescriptor = $mcpDescriptorJson | ConvertFrom-Json
-    if ($mcpDescriptor.name -ne "codex-ccpanes-mcp" -or
+    if ($mcpDescriptor.name -ne "codex-paneforge-mcp" -or
         [string]::IsNullOrWhiteSpace($mcpDescriptor.mcpSchemaVersion) -or
         [string]::IsNullOrWhiteSpace($mcpDescriptor.ipcSchemaVersion)) {
         throw "Installed MCP descriptor contract failed."
@@ -166,7 +166,7 @@ try {
 command = "other"
 "@
     Write-Utf8NoBomText -Path $codexConfig -Text $codexConfigText
-    $syntheticDiscovery = [System.IO.Path]::Combine($TestRoot, "cc-panes", "runtime", "daemon-manifest.json")
+    $syntheticDiscovery = [System.IO.Path]::Combine($TestRoot, "paneforge", "runtime", "daemon-manifest.json")
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $syntheticDiscovery) | Out-Null
     Write-Utf8NoBomText -Path $syntheticDiscovery -Text '{"addr":"127.0.0.1:62674","token":"TOKEN_PLACEHOLDER","pid":1,"startedAt":1}'
     $beforeConfigHash = (Get-FileHash -LiteralPath $codexConfig -Algorithm SHA256).Hash
@@ -181,14 +181,14 @@ command = "other"
         -RequireRegistered -Json -Quiet | Out-Null
     & $configManager -Action Repair -ConfigPath $codexConfig -InstallRoot $InstallRoot `
         -McpExecutable $state.mcpExecutable -DiscoveryFile $syntheticDiscovery -Json -Quiet | Out-Null
-    $managedMatches = Select-String -LiteralPath $codexConfig -Pattern "# BEGIN CodexCCPanesCompanion MCP codex_ccpanes" |
+    $managedMatches = Select-String -LiteralPath $codexConfig -Pattern "# BEGIN CodexPaneForgeCompanion MCP codex_paneforge" |
         Measure-Object
     if ($managedMatches.Count -ne 1) {
         throw "Codex MCP repair duplicated managed configuration."
     }
     $managedConfig = Get-Content -LiteralPath $codexConfig -Raw
     $expectedDiscoveryPath = [System.IO.Path]::GetFullPath($syntheticDiscovery)
-    $expectedDiscoveryLine = 'CODEX_CCPANES_DISCOVERY_FILE = "' +
+    $expectedDiscoveryLine = 'CODEX_PANEFORGE_DISCOVERY_FILE = "' +
         $expectedDiscoveryPath.Replace('\', '\\') + '"'
     if (-not $managedConfig.Contains($expectedDiscoveryLine)) {
         throw "Codex MCP managed configuration is missing the discovery file."
@@ -229,18 +229,18 @@ command = "installer-other"
     & $installer -InstallRoot $InstallRoot -SkipShortcuts -SkipRegistry -Quiet `
         -ConfigureCodexMcp -CodexConfigPath $installerCodexConfig | Out-Null
     $installerManagedMatches = Select-String -LiteralPath $installerCodexConfig `
-        -Pattern "# BEGIN CodexCCPanesCompanion MCP codex_ccpanes" | Measure-Object
+        -Pattern "# BEGIN CodexPaneForgeCompanion MCP codex_paneforge" | Measure-Object
     if ($installerManagedMatches.Count -ne 1) {
         throw "Installer-driven Codex MCP repair duplicated managed configuration."
     }
 
-    $fixture = Join-Path $TestRoot "fixture\cc-panes.exe"
+    $fixture = Join-Path $TestRoot "fixture\paneforge.exe"
     New-Item -ItemType Directory -Force -Path (Split-Path -Parent $fixture) | Out-Null
     Set-Content -LiteralPath $fixture -Value "fixture" -Encoding ascii -NoNewline
-    $previousHome = $env:CODEX_CCPANES_HOME
-    $env:CODEX_CCPANES_HOME = Join-Path $TestRoot "companion-home"
+    $previousHome = $env:CODEX_PANEFORGE_HOME
+    $env:CODEX_PANEFORGE_HOME = Join-Path $TestRoot "companion-home"
     try {
-        $migrationJson = & $state.cliExecutable migrate-config --ccpanes-bin $fixture --apply --json
+        $migrationJson = & $state.cliExecutable migrate-config --paneforge-bin $fixture --apply --json
         if ($LASTEXITCODE -ne 0) {
             throw "Configuration migration command failed with exit code $LASTEXITCODE"
         }
@@ -259,10 +259,10 @@ command = "installer-other"
     }
     finally {
         if ($null -eq $previousHome) {
-            Remove-Item Env:CODEX_CCPANES_HOME -ErrorAction SilentlyContinue
+            Remove-Item Env:CODEX_PANEFORGE_HOME -ErrorAction SilentlyContinue
         }
         else {
-            $env:CODEX_CCPANES_HOME = $previousHome
+            $env:CODEX_PANEFORGE_HOME = $previousHome
         }
     }
 
@@ -275,7 +275,7 @@ command = "installer-other"
     & $uninstaller -InstallRoot $InstallRoot -SkipShortcuts -SkipRegistry -Quiet `
         -RemoveCodexMcp -CodexConfigPath $installerCodexConfig
     $installerConfigAfterUninstall = Get-Content -LiteralPath $installerCodexConfig -Raw
-    if ($installerConfigAfterUninstall -match "# BEGIN CodexCCPanesCompanion MCP codex_ccpanes" -or
+    if ($installerConfigAfterUninstall -match "# BEGIN CodexPaneForgeCompanion MCP codex_paneforge" -or
         $installerConfigAfterUninstall -notmatch "\[mcp_servers\.installer_other\]") {
         throw "Uninstaller-driven Codex MCP removal did not preserve unmanaged config content."
     }
@@ -312,7 +312,7 @@ command = "fresh-other"
     & $uninstaller -InstallRoot $freshInstallRoot -SkipShortcuts -SkipRegistry -Quiet `
         -RemoveCodexMcp -CodexConfigPath $freshCodexConfig
     $freshConfigAfterUninstall = Get-Content -LiteralPath $freshCodexConfig -Raw
-    if ($freshConfigAfterUninstall -match "# BEGIN CodexCCPanesCompanion MCP codex_ccpanes" -or
+    if ($freshConfigAfterUninstall -match "# BEGIN CodexPaneForgeCompanion MCP codex_paneforge" -or
         $freshConfigAfterUninstall -notmatch "\[mcp_servers\.fresh_other\]") {
         throw "Fresh uninstaller-driven Codex MCP removal did not preserve unmanaged config content."
     }
@@ -324,7 +324,7 @@ command = "fresh-other"
     Add-Content -LiteralPath (Join-Path $tamperedPackage "README.md") -Value "`nTAMPERED"
     $tamperRejected = $false
     try {
-        & (Join-Path $tamperedPackage "Install-CodexCCPanes.ps1") `
+        & (Join-Path $tamperedPackage "Install-CodexPaneForge.ps1") `
             -InstallRoot (Join-Path $TestRoot "tampered-install") `
             -SkipShortcuts -SkipRegistry -Quiet | Out-Null
     }

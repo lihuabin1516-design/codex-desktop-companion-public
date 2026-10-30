@@ -10,12 +10,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args().skip(1);
     let mut database_path = None::<PathBuf>;
     let mut data_dir = None::<PathBuf>;
-    let mut ipc_endpoint = String::from("codex-ccpanes-coordinator-v1");
+    let mut ipc_endpoint = String::from("codex-paneforge-coordinator-v1");
     let mut stdio_ipc = false;
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--version" | "-V" => {
-                println!("codex-ccpanes-coordinator {}", env!("CARGO_PKG_VERSION"));
+                println!("codex-paneforge-coordinator {}", env!("CARGO_PKG_VERSION"));
                 return Ok(());
             }
             "--stdio-ipc" => stdio_ipc = true,

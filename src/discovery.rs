@@ -6,9 +6,9 @@ use std::path::{Path, PathBuf};
 use anyhow::{bail, Result};
 use serde::Serialize;
 
-use crate::config::configured_ccpanes_path;
+use crate::config::configured_paneforge_path;
 
-pub const CCPANES_TARGET_ENV: &str = "CODEX_CCPANES_EXE";
+pub const PANEFORGE_TARGET_ENV: &str = "CODEX_PANEFORGE_EXE";
 pub const CODEX_TARGET_ENV: &str = "CODEX_CLI_PATH";
 
 #[derive(Debug, Clone, Serialize)]
@@ -19,11 +19,11 @@ pub struct ResolvedExecutable {
     pub source: String,
 }
 
-pub fn resolve_ccpanes(explicit: Option<&Path>) -> Result<ResolvedExecutable> {
-    let configured = env::var_os(CCPANES_TARGET_ENV)
+pub fn resolve_paneforge(explicit: Option<&Path>) -> Result<ResolvedExecutable> {
+    let configured = env::var_os(PANEFORGE_TARGET_ENV)
         .filter(|value| !value.is_empty())
-        .or_else(|| configured_ccpanes_path().map(PathBuf::into_os_string));
-    resolve_ccpanes_with(
+        .or_else(|| configured_paneforge_path().map(PathBuf::into_os_string));
+    resolve_paneforge_with(
         explicit,
         configured.as_deref(),
         env::var_os("LOCALAPPDATA").as_deref(),
@@ -56,7 +56,7 @@ pub fn external_command_path(path: &Path) -> PathBuf {
     path.to_path_buf()
 }
 
-pub fn resolve_ccpanes_with(
+pub fn resolve_paneforge_with(
     explicit: Option<&Path>,
     configured: Option<&OsStr>,
     local_app_data: Option<&OsStr>,
@@ -74,21 +74,21 @@ pub fn resolve_ccpanes_with(
     let mut candidates = Vec::new();
     if let Some(root) = local_app_data {
         let root = PathBuf::from(root);
-        candidates.push((root.join("cc-panes").join("cc-panes.exe"), "local-app-data"));
+        candidates.push((root.join("paneforge").join("paneforge.exe"), "local-app-data"));
         candidates.push((
-            root.join("Programs").join("cc-panes").join("cc-panes.exe"),
+            root.join("Programs").join("paneforge").join("paneforge.exe"),
             "local-programs",
         ));
     }
     if let Some(root) = program_files {
         candidates.push((
-            PathBuf::from(root).join("cc-panes").join("cc-panes.exe"),
+            PathBuf::from(root).join("paneforge").join("paneforge.exe"),
             "program-files",
         ));
     }
     if let Some(root) = program_files_x86 {
         candidates.push((
-            PathBuf::from(root).join("cc-panes").join("cc-panes.exe"),
+            PathBuf::from(root).join("paneforge").join("paneforge.exe"),
             "program-files-x86",
         ));
     }
@@ -98,11 +98,11 @@ pub fn resolve_ccpanes_with(
         }
     }
     if let Some(path) = path {
-        if let Some(found) = find_on_path_with("cc-panes", path) {
+        if let Some(found) = find_on_path_with("paneforge", path) {
             return Ok(found);
         }
     }
-    bail!("official_ccpanes_executable_not_found")
+    bail!("official_paneforge_executable_not_found")
 }
 
 fn resolved_file(path: &Path, source: &str) -> Result<ResolvedExecutable> {
@@ -157,11 +157,11 @@ mod tests {
     #[test]
     fn explicit_path_has_priority() {
         let root = tempfile::tempdir().expect("tempdir");
-        let explicit = root.path().join("explicit").join("cc-panes.exe");
-        let configured = root.path().join("configured").join("cc-panes.exe");
+        let explicit = root.path().join("explicit").join("paneforge.exe");
+        let configured = root.path().join("configured").join("paneforge.exe");
         touch(&explicit);
         touch(&configured);
-        let resolved = resolve_ccpanes_with(
+        let resolved = resolve_paneforge_with(
             Some(&explicit),
             Some(configured.as_os_str()),
             None,
@@ -180,10 +180,10 @@ mod tests {
     #[test]
     fn standard_local_app_data_path_is_detected() {
         let root = tempfile::tempdir().expect("tempdir");
-        let executable = root.path().join("cc-panes").join("cc-panes.exe");
+        let executable = root.path().join("paneforge").join("paneforge.exe");
         touch(&executable);
         let resolved =
-            resolve_ccpanes_with(None, None, Some(root.path().as_os_str()), None, None, None)
+            resolve_paneforge_with(None, None, Some(root.path().as_os_str()), None, None, None)
                 .expect("resolve local app data");
         assert_eq!(resolved.source, "local-app-data");
     }
@@ -191,10 +191,10 @@ mod tests {
     #[test]
     fn path_fallback_prefers_executable_extension() {
         let root = tempfile::tempdir().expect("tempdir");
-        let executable = root.path().join("cc-panes.exe");
+        let executable = root.path().join("paneforge.exe");
         touch(&executable);
         let resolved =
-            resolve_ccpanes_with(None, None, None, None, None, Some(root.path().as_os_str()))
+            resolve_paneforge_with(None, None, None, None, None, Some(root.path().as_os_str()))
                 .expect("resolve path");
         assert_eq!(resolved.source, "path");
     }

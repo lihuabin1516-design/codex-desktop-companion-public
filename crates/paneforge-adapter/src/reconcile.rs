@@ -78,7 +78,7 @@ pub fn match_unknown_dispatch(
     if strongest.len() > 1 {
         return Err(CoordinationError::new(
             ErrorCode::ExternalBindingConflict,
-            format!("CC-Panes reconciliation found multiple sessions for marker {title_marker}"),
+            format!("PaneForge reconciliation found multiple sessions for marker {title_marker}"),
         ));
     }
     Ok(strongest.pop())
@@ -230,12 +230,12 @@ mod tests {
     fn unknown_dispatch_prefers_client_request_id_over_marker() {
         let listing = json!({
             "sessions": [
-                {"sessionId": "marker-only", "title": "[CODEX-CCPANES:run:step:1] worker"},
+                {"sessionId": "marker-only", "title": "[CODEX-PANEFORGE:run:step:1] worker"},
                 {
                     "sessionId": "request-match",
                     "taskId": "task-1",
                     "metadata": {"clientRequestId": "request-1"},
-                    "title": "[CODEX-CCPANES:run:step:1] worker"
+                    "title": "[CODEX-PANEFORGE:run:step:1] worker"
                 }
             ]
         });
@@ -243,7 +243,7 @@ mod tests {
             &listing,
             &json!({"panes": []}),
             "request-1",
-            "[CODEX-CCPANES:run:step:1]",
+            "[CODEX-PANEFORGE:run:step:1]",
             "unused",
             1_000,
         )
@@ -259,15 +259,15 @@ mod tests {
         let sessions = json!({"sessions": [{"sessionId": "one"}, {"sessionId": "two"}]});
         let panes = json!({
             "layouts": [{"panes": [{"tabs": [
-                {"sessionId": "one", "title": "[CODEX-CCPANES:run:step:1] worker"},
-                {"sessionId": "two", "title": "[CODEX-CCPANES:run:step:1] worker"}
+                {"sessionId": "one", "title": "[CODEX-PANEFORGE:run:step:1] worker"},
+                {"sessionId": "two", "title": "[CODEX-PANEFORGE:run:step:1] worker"}
             ]}]}]
         });
         let error = match_unknown_dispatch(
             &sessions,
             &panes,
             "missing",
-            "[CODEX-CCPANES:run:step:1]",
+            "[CODEX-PANEFORGE:run:step:1]",
             "unused",
             1_000,
         )
@@ -282,7 +282,7 @@ mod tests {
         let panes = json!({
             "layouts": [{"panes": [{"tabs": [{
                 "sessionId": "prompt-match",
-                "prompt": "[CODEX-CCPANES:different]\nproduce result",
+                "prompt": "[CODEX-PANEFORGE:different]\nproduce result",
                 "createdAtMs": 1_000
             }]}]}]
         });
@@ -290,7 +290,7 @@ mod tests {
             &sessions,
             &panes,
             "missing",
-            "[CODEX-CCPANES:run:step:1]",
+            "[CODEX-PANEFORGE:run:step:1]",
             &prompt_hash,
             1_000,
         )
@@ -303,7 +303,7 @@ mod tests {
             &sessions,
             &panes,
             "missing",
-            "[CODEX-CCPANES:run:step:1]",
+            "[CODEX-PANEFORGE:run:step:1]",
             &prompt_hash,
             60 * 60 * 1_000,
         )
@@ -314,14 +314,14 @@ mod tests {
     #[test]
     fn unknown_dispatch_deduplicates_current_layout_view() {
         let sessions = json!({"sessions": [{"sessionId": "session-1", "status": "working"}]});
-        let tab = json!({"sessionId": "session-1", "title": "[CODEX-CCPANES:run:step:1] worker"});
+        let tab = json!({"sessionId": "session-1", "title": "[CODEX-PANEFORGE:run:step:1] worker"});
         let panes =
             json!({"panes": [{"tabs": [tab.clone()]}], "layouts": [{"panes": [{"tabs": [tab]}]}]});
         let binding = match_unknown_dispatch(
             &sessions,
             &panes,
             "missing",
-            "[CODEX-CCPANES:run:step:1]",
+            "[CODEX-PANEFORGE:run:step:1]",
             "unused",
             1_000,
         )
@@ -333,12 +333,12 @@ mod tests {
     #[test]
     fn unknown_dispatch_ignores_offline_pane_tab() {
         let sessions = json!({"sessions": [{"sessionId": "other", "status": "working"}]});
-        let panes = json!({"layouts": [{"panes": [{"tabs": [{"sessionId": "stale", "title": "[CODEX-CCPANES:run:step:1] worker"}]}]}]});
+        let panes = json!({"layouts": [{"panes": [{"tabs": [{"sessionId": "stale", "title": "[CODEX-PANEFORGE:run:step:1] worker"}]}]}]});
         let binding = match_unknown_dispatch(
             &sessions,
             &panes,
             "missing",
-            "[CODEX-CCPANES:run:step:1]",
+            "[CODEX-PANEFORGE:run:step:1]",
             "unused",
             1_000,
         )

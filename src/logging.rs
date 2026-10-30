@@ -10,13 +10,13 @@ use serde_json::{json, Value};
 const MAX_LOG_BYTES: u64 = 5 * 1024 * 1024;
 
 pub fn product_home() -> PathBuf {
-    if let Some(path) = env::var_os("CODEX_CCPANES_HOME").filter(|value| !value.is_empty()) {
+    if let Some(path) = env::var_os("CODEX_PANEFORGE_HOME").filter(|value| !value.is_empty()) {
         return PathBuf::from(path);
     }
     env::var_os("LOCALAPPDATA")
         .map(PathBuf::from)
         .unwrap_or_else(env::temp_dir)
-        .join("CodexCCPanes")
+        .join("CodexPaneForge")
 }
 
 pub fn append_event(event: &str, details: Value) -> Result<()> {

@@ -3,10 +3,10 @@ param(
     [ValidateSet("Apply", "Repair", "Verify", "Rollback", "Remove")]
     [string]$Action = "Verify",
     [string]$ConfigPath,
-    [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA "CodexCCPanes"),
+    [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA "CodexPaneForge"),
     [string]$McpExecutable,
     [string]$DiscoveryFile,
-    [string]$RegistrationName = "codex_ccpanes",
+    [string]$RegistrationName = "codex_paneforge",
     [string]$TransactionPath,
     [switch]$RequireRegistered,
     [switch]$Json,
@@ -16,14 +16,14 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$ProductId = "CodexCCPanesCompanion"
-$BeginMarkerPrefix = "# BEGIN CodexCCPanesCompanion MCP"
-$EndMarkerPrefix = "# END CodexCCPanesCompanion MCP"
+$ProductId = "CodexPaneForgeCompanion"
+$BeginMarkerPrefix = "# BEGIN CodexPaneForgeCompanion MCP"
+$EndMarkerPrefix = "# END CodexPaneForgeCompanion MCP"
 
 function Write-Step {
     param([string]$Message)
     if (-not $Quiet) {
-        Write-Host "[Codex + CC-Panes] $Message"
+        Write-Host "[Codex + PaneForge] $Message"
     }
 }
 
@@ -148,11 +148,11 @@ function New-ManagedBlock {
         "command = $(ConvertTo-TomlString $Executable)",
         "args = []",
         "[mcp_servers.$Name.env]",
-        "CODEX_CCPANES_INSTALL_ROOT = $(ConvertTo-TomlString $Root)",
-        "CODEX_CCPANES_MANAGED_BY = ""$ProductId"""
+        "CODEX_PANEFORGE_INSTALL_ROOT = $(ConvertTo-TomlString $Root)",
+        "CODEX_PANEFORGE_MANAGED_BY = ""$ProductId"""
     )
     if (-not [string]::IsNullOrWhiteSpace($Discovery)) {
-        $lines += "CODEX_CCPANES_DISCOVERY_FILE = $(ConvertTo-TomlString $Discovery)"
+        $lines += "CODEX_PANEFORGE_DISCOVERY_FILE = $(ConvertTo-TomlString $Discovery)"
     }
     $lines += @("$EndMarkerPrefix $Name", "")
     return $lines -join [Environment]::NewLine
@@ -185,7 +185,7 @@ function Get-RegistrationStatus {
         $commandMatches = $text.Contains($expectedLine)
     }
     if ($managed -and -not [string]::IsNullOrWhiteSpace($ExpectedDiscovery)) {
-        $expectedDiscoveryLine = "CODEX_CCPANES_DISCOVERY_FILE = $(ConvertTo-TomlString $ExpectedDiscovery)"
+        $expectedDiscoveryLine = "CODEX_PANEFORGE_DISCOVERY_FILE = $(ConvertTo-TomlString $ExpectedDiscovery)"
         $discoveryMatches = $text.Contains($expectedDiscoveryLine)
     }
     return [ordered]@{
@@ -252,7 +252,7 @@ if ($Action -in @("Apply", "Repair", "Verify")) {
     if (-not [string]::IsNullOrWhiteSpace($DiscoveryFile)) {
         $DiscoveryFile = [System.IO.Path]::GetFullPath($DiscoveryFile)
         if (-not (Test-Path -LiteralPath $DiscoveryFile -PathType Leaf)) {
-            throw "CC-Panes discovery file is missing: $DiscoveryFile"
+            throw "PaneForge discovery file is missing: $DiscoveryFile"
         }
     }
 }

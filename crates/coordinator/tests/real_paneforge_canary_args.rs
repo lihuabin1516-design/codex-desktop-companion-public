@@ -2,14 +2,14 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use ccpanes_adapter::{
-    dedicated_workspace_name_for_project_path, DedicatedWorkspaceReadiness, FakeCcpanesBehavior,
-    FakeCcpanesServer, TOOL_ADD_PROJECT_TO_WORKSPACE, TOOL_CREATE_WORKSPACE, TOOL_KILL_SESSION,
+use paneforge_adapter::{
+    dedicated_workspace_name_for_project_path, DedicatedWorkspaceReadiness, FakePaneForgeBehavior,
+    FakePaneForgeServer, TOOL_ADD_PROJECT_TO_WORKSPACE, TOOL_CREATE_WORKSPACE, TOOL_KILL_SESSION,
     TOOL_LAUNCH_TASK, TOOL_SUBMIT_TO_SESSION, TOOL_WRITE_TO_SESSION,
 };
 use coordination_coordinator::{
-    parse_real_ccpanes_canary_args, prepare_synthetic_git_repository, run_real_ccpanes_canary,
-    RealCcpanesCanaryArgs,
+    parse_real_paneforge_canary_args, prepare_synthetic_git_repository, run_real_paneforge_canary,
+    RealPaneForgeCanaryArgs,
 };
 use coordination_core::{OutboxState, ResultAggregationState, WorkerState, WorkflowState};
 use coordination_store::ExternalBindingState;
@@ -18,7 +18,7 @@ use tempfile::tempdir;
 
 #[test]
 fn real_canary_args_require_explicit_dedicated_inputs_and_parse_timeouts() {
-    let args = parse_real_ccpanes_canary_args([
+    let args = parse_real_paneforge_canary_args([
         "--discovery",
         "C:/fixture/mcp-orchestrator.json",
         "--state-dir",
@@ -26,11 +26,11 @@ fn real_canary_args_require_explicit_dedicated_inputs_and_parse_timeouts() {
         "--project-path",
         "C:/fixture/project",
         "--workspace-name",
-        "codex-ccpanes-phase7-real-fixture",
+        "codex-paneforge-phase7-real-fixture",
         "--project-name",
         "real-fixture",
         "--marker",
-        "CODEX_CCPANES_REAL_MARKER",
+        "CODEX_PANEFORGE_REAL_MARKER",
         "--timeout-ms",
         "420000",
         "--poll-interval-ms",
@@ -48,9 +48,9 @@ fn real_canary_args_require_explicit_dedicated_inputs_and_parse_timeouts() {
     );
     assert_eq!(args.state_dir, PathBuf::from("C:/fixture/state"));
     assert_eq!(args.project_path, PathBuf::from("C:/fixture/project"));
-    assert_eq!(args.workspace_name, "codex-ccpanes-phase7-real-fixture");
+    assert_eq!(args.workspace_name, "codex-paneforge-phase7-real-fixture");
     assert_eq!(args.project_name, "real-fixture");
-    assert_eq!(args.marker, "CODEX_CCPANES_REAL_MARKER");
+    assert_eq!(args.marker, "CODEX_PANEFORGE_REAL_MARKER");
     assert_eq!(args.timeout, Duration::from_millis(420_000));
     assert_eq!(args.poll_interval, Duration::from_millis(750));
     assert_eq!(args.connect_timeout, Duration::from_millis(2_500));
@@ -59,7 +59,7 @@ fn real_canary_args_require_explicit_dedicated_inputs_and_parse_timeouts() {
 
 #[test]
 fn real_canary_args_fail_closed_when_a_required_input_is_missing() {
-    let error = parse_real_ccpanes_canary_args([
+    let error = parse_real_paneforge_canary_args([
         "--discovery",
         "C:/fixture/mcp-orchestrator.json",
         "--state-dir",
@@ -75,9 +75,9 @@ fn real_canary_runner_uses_fresh_store_and_preserves_the_launched_session() {
     let dir = tempdir().unwrap();
     let registration = prepare_synthetic_git_repository(dir.path(), "real-canary-project").unwrap();
     let project_path = registration.repository.path.clone();
-    let workspace_name = "codex-ccpanes-phase7-real-runner";
+    let workspace_name = "codex-paneforge-phase7-real-runner";
     let project_name = "real-canary-project";
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
         workspaces: vec![json!({
             "id": "workspace-secret-id",
@@ -89,7 +89,7 @@ fn real_canary_runner_uses_fresh_store_and_preserves_the_launched_session() {
             "path": project_path,
             "workspaceName": workspace_name
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
     let discovery = dir.path().join("mcp-orchestrator.json");
@@ -97,7 +97,7 @@ fn real_canary_runner_uses_fresh_store_and_preserves_the_launched_session() {
         &discovery,
         serde_json::to_vec(&json!({
             "mcpServers": {
-                "ccpanes": {
+                "paneforge": {
                     "url": fake.endpoint(),
                     "headers": {}
                 }
@@ -110,7 +110,7 @@ fn real_canary_runner_uses_fresh_store_and_preserves_the_launched_session() {
 
     let challenge = "tuptuo citehtnys";
     let expected_response = "synthetic output";
-    let report = run_real_ccpanes_canary(RealCcpanesCanaryArgs {
+    let report = run_real_paneforge_canary(RealPaneForgeCanaryArgs {
         discovery,
         state_dir: state_dir.clone(),
         project_path: PathBuf::from(&registration.repository.path),
@@ -168,7 +168,7 @@ fn real_canary_runner_creates_project_dedicated_workspace_when_source_workspace_
     let source_workspace_name = "source-workspace-root";
     let launch_workspace_name = dedicated_workspace_name_for_project_path(&project_path);
     let project_name = "real-canary-routed-project";
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
         workspaces: vec![json!({
             "id": "source-workspace-id",
@@ -181,7 +181,7 @@ fn real_canary_runner_creates_project_dedicated_workspace_when_source_workspace_
             "path": project_path,
             "workspaceName": source_workspace_name
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
     let discovery = dir.path().join("mcp-orchestrator.json");
@@ -189,7 +189,7 @@ fn real_canary_runner_creates_project_dedicated_workspace_when_source_workspace_
         &discovery,
         serde_json::to_vec(&json!({
             "mcpServers": {
-                "ccpanes": {
+                "paneforge": {
                     "url": fake.endpoint(),
                     "headers": {}
                 }
@@ -200,7 +200,7 @@ fn real_canary_runner_creates_project_dedicated_workspace_when_source_workspace_
     .unwrap();
     let state_dir = dir.path().join("state-routed");
 
-    let report = run_real_ccpanes_canary(RealCcpanesCanaryArgs {
+    let report = run_real_paneforge_canary(RealPaneForgeCanaryArgs {
         discovery,
         state_dir,
         project_path: PathBuf::from(&registration.repository.path),

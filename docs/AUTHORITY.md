@@ -1,24 +1,24 @@
-# Codex + CC-Panes Companion 权威定义
+# Codex + PaneForge Companion 权威定义
 
 版本：`2.0`
-状态：三组件 Authority v2 / Phase 8 external acceptance + CC-Panes v0.12.3 cwd 路由恢复
+状态：三组件 Authority v2 / Phase 8 external acceptance + PaneForge v0.12.3 cwd 路由恢复
 日期：2026-08-11
 
 ## 产品定位
 
-Companion 是 Codex App 与官方 CC-Panes 之间的本机 Coordination Plane 与安全启动层。
-它保留既有 Launcher 运维能力，并以独立组件恢复 Codex App 主控到 CC-Panes 外部
+Companion 是 Codex App 与官方 PaneForge 之间的本机 Coordination Plane 与安全启动层。
+它保留既有 Launcher 运维能力，并以独立组件恢复 Codex App 主控到 PaneForge 外部
 Worker 的高层派发、观察、取消和结果回收合同。
 
-当前已发布运行能力仍是 `CodexCCPanes.exe` 和 `codex-ccpanes.exe` Launcher/诊断链路；
+当前已发布运行能力仍是 `CodexPaneForge.exe` 和 `codex-paneforge.exe` Launcher/诊断链路；
 Phase 7 增加 `coordination-core`、`coordination-protocol`、`coordination-store`、
-`coordinator`、`ccpanes-adapter` 与 `coordination-mcp` 可验证合同。MCP stdio 进程、
-Coordinator IPC seam、单 Worker 派发/状态/取消/结果、fake CC-Panes 完成链路、多 Step
-Workflow fan-out/fan-in、容量、超时、Writer Lease、只读 CC-Panes capability preflight
-专用合成 Git 仓库登记/恢复 guard、专用 CC-Panes Workspace/Project 只读 gate 和 fake
+`coordinator`、`paneforge-adapter` 与 `coordination-mcp` 可验证合同。MCP stdio 进程、
+Coordinator IPC seam、单 Worker 派发/状态/取消/结果、fake PaneForge 完成链路、多 Step
+Workflow fan-out/fan-in、容量、超时、Writer Lease、只读 PaneForge capability preflight
+专用合成 Git 仓库登记/恢复 guard、专用 PaneForge Workspace/Project 只读 gate 和 fake
 Adapter 单 Worker success canary、cancellation canary、Coordinator restart canary、dropped
 launch response / unknown dispatch canary、Token/discovery rotation canary、synthetic
-CC-Panes process restart canary 与 synthetic multi-worker controlled capacity canary 已用
+PaneForge process restart canary 与 synthetic multi-worker controlled capacity canary 已用
 测试或本机只读 probe 覆盖。Phase 8 首个本地包装切片要求 release 包 inventory 含三个
 产品组件 EXE 与既有辅助 CLI，并用 `ARTIFACT_MANIFEST.json`、`SHA256SUMS`、
 `DEPENDENCIES.json` 和隔离安装状态登记验证；当前切片新增 `Configure-CodexMcp.ps1`
@@ -29,7 +29,7 @@ start-plan，不把后台 Coordinator 注册为默认安装行为；当前切片
 `EXTERNAL_WINDOWS_ACCEPTANCE.md`、`Test-ExternalWindowsAcceptance.ps1` 和
 `RELEASE_NOTES_0.2.0-beta.1.md` 包内合同，并由 Manifest/verify/install/self-test 验证其存在、
 marker 与副作用边界。Coordinator→Adapter 的一次性前台单 Worker execution seam 已在
-专用合成项目上通过真实 CC-Panes `0.12.3` 新 Codex 对话 canary；本机开发验收已在
+专用合成项目上通过真实 PaneForge `0.12.3` 新 Codex 对话 canary；本机开发验收已在
 显式 `ConfigPath` 授权下事务注册托管 MCP block 并完成新对话入口验收。package/default
 用户 MCP 注册、后台守护、多 Worker 派发、真实 Session 取消/restart/unknown-outcome
 reconcile、外部 Windows 机器实际验收和真实发布属于后续门禁。
@@ -38,10 +38,10 @@ reconcile、外部 Windows 机器实际验收和真实发布属于后续门禁�
 
 ```text
 Codex App
-→ codex-ccpanes-mcp.exe
-→ codex-ccpanes-coordinator.exe
-→ CC-Panes HTTP MCP Adapter
-→ 官方 CC-Panes Session
+→ codex-paneforge-mcp.exe
+→ codex-paneforge-coordinator.exe
+→ PaneForge HTTP MCP Adapter
+→ 官方 PaneForge Session
 → Codex CLI Worker
 → 状态/输出对账
 → 结果聚合
@@ -52,30 +52,30 @@ Codex App
 
 | 组件 | 拥有 | 不拥有 |
 |---|---|---|
-| `CodexCCPanes.exe` | 官方 CC-Panes 发现、安全启动、Codex Desktop 任务级私有环境清理、启动收据 | Workflow/Worker 权威状态、CC-Panes Session、结果聚合 |
-| `codex-ccpanes-coordinator.exe` | Workflow、Worker、ExternalBinding、Lease、Event、Outbox、Budget、Result 的唯一本机生产状态源；并发、超时、重试、取消、恢复与聚合 | Codex App 对话、CC-Panes PTY/Session 本体、官方安装与更新 |
-| `codex-ccpanes-mcp.exe` | MCP initialize、tools/list、tools/call、高层输入验证、公共错误映射、到 Coordinator 的本机 IPC；Phase 6 支持 synthetic multi-step Workflow create/start/result | Workflow 持久状态、重试、Session 对账、调度决定 |
+| `CodexPaneForge.exe` | 官方 PaneForge 发现、安全启动、Codex Desktop 任务级私有环境清理、启动收据 | Workflow/Worker 权威状态、PaneForge Session、结果聚合 |
+| `codex-paneforge-coordinator.exe` | Workflow、Worker、ExternalBinding、Lease、Event、Outbox、Budget、Result 的唯一本机生产状态源；并发、超时、重试、取消、恢复与聚合 | Codex App 对话、PaneForge PTY/Session 本体、官方安装与更新 |
+| `codex-paneforge-mcp.exe` | MCP initialize、tools/list、tools/call、高层输入验证、公共错误映射、到 Coordinator 的本机 IPC；Phase 6 支持 synthetic multi-step Workflow create/start/result | Workflow 持久状态、重试、Session 对账、调度决定 |
 | `coordination-core` | ID、revision、Workflow/Worker/Outbox 状态机、WorkflowSpec v1beta1、RepositoryRef 可选 `workspaceName`、DAG Step、fan-in policy、命令/查询/事件、公共错误码 | Store、MCP transport、Adapter、Windows、Launcher |
 | `coordination-protocol` | MCP/IPC schema version、公共工具输入输出 DTO、RepositoryInput 可选 `workspaceName`、schema 合同、version negotiation、聚合结果来源/缺失/失败合同 | 运行时调度、持久化、真实外部副作用 |
-| `coordination-store` | SQLite schema v1、migration/backup/integrity、Workflow/Worker/Event/Outbox/ExternalBinding/Lease/Result repository、external launch success→Binding ACTIVE 记录、optimistic revision、幂等记录、Writer Lease、retention 元数据 | Coordinator 调度策略、MCP transport、CC-Panes Adapter、Windows、Launcher、真实外部副作用 |
-| `coordinator` | Runtime identity、单实例锁、IPC health handler、scheduler、capacity/budget admission、DAG fan-out、fan-in policy、Worker/Workflow timeout、dispatch/reconcile/control semaphore、pause/resume/cancel orchestration、result aggregation、metrics/log snapshot、repository baseline guard、专用合成 Git 仓库登记/恢复 guard，以及经 Adapter 执行的一次性前台单 Worker canary | CC-Panes HTTP 协议翻译、MCP stdio server、安装注册、后台守护、通用真实 Worker 池、用户仓库清理 |
-| `ccpanes-adapter` | 显式 discovery、认证 Header 注入、Token/discovery rotation canary、synthetic process restart canary、HTTP MCP initialize/tools/list、capability digest、按工具 inventory/schema 门控的 `launch_task`、Session query/output/submit/kill/wait/write、unknown dispatch marker reconcile、只读 capability preflight、Session inventory 脱敏摘要、专用 Workspace/Project 只读 gate、deterministic fake server | Workflow 权威状态、重试策略、调度决定、CC-Panes Session 本体、CC-Panes 数据库、MCP stdio、Launcher、Workspace/Project 创建决定 |
+| `coordination-store` | SQLite schema v1、migration/backup/integrity、Workflow/Worker/Event/Outbox/ExternalBinding/Lease/Result repository、external launch success→Binding ACTIVE 记录、optimistic revision、幂等记录、Writer Lease、retention 元数据 | Coordinator 调度策略、MCP transport、PaneForge Adapter、Windows、Launcher、真实外部副作用 |
+| `coordinator` | Runtime identity、单实例锁、IPC health handler、scheduler、capacity/budget admission、DAG fan-out、fan-in policy、Worker/Workflow timeout、dispatch/reconcile/control semaphore、pause/resume/cancel orchestration、result aggregation、metrics/log snapshot、repository baseline guard、专用合成 Git 仓库登记/恢复 guard，以及经 Adapter 执行的一次性前台单 Worker canary | PaneForge HTTP 协议翻译、MCP stdio server、安装注册、后台守护、通用真实 Worker 池、用户仓库清理 |
+| `paneforge-adapter` | 显式 discovery、认证 Header 注入、Token/discovery rotation canary、synthetic process restart canary、HTTP MCP initialize/tools/list、capability digest、按工具 inventory/schema 门控的 `launch_task`、Session query/output/submit/kill/wait/write、unknown dispatch marker reconcile、只读 capability preflight、Session inventory 脱敏摘要、专用 Workspace/Project 只读 gate、deterministic fake server | Workflow 权威状态、重试策略、调度决定、PaneForge Session 本体、PaneForge 数据库、MCP stdio、Launcher、Workspace/Project 创建决定 |
 
 ## 上游与外部产品权威
 
 1. Codex App 与 Codex CLI 的行为以 OpenAI 官方发行版为准。
-2. CC-Panes 的功能、数据模型、数据库、PTY、Pane、Session 和更新器以
-   `wuxiran/cc-pane` 官方发行版为准。
+2. PaneForge 的功能、数据模型、数据库、PTY、Pane、Session 和更新器以
+   `lihuabin1516-design/PaneForge` 官方发行版为准。
 3. Companion 不复制上述产品源码，不固定其补丁版本，不介入其自动更新。
-4. Coordinator 只通过公开 CC-Panes HTTP MCP 能力创建、查询、提交和停止外部 Session；
-   不读取或修改 CC-Panes 数据库、WebView storage 或布局文件。
+4. Coordinator 只通过公开 PaneForge HTTP MCP 能力创建、查询、提交和停止外部 Session；
+   不读取或修改 PaneForge 数据库、WebView storage 或布局文件。
 5. Codex App thread 与外部 Worker 通过 Workflow/Worker ID 关联；外部 Worker 不伪装成
    Codex App 内置 Subagent 或同一对话。
 
-## 当前 CC-Panes 兼容合同
+## 当前 PaneForge 兼容合同
 
-- 当前已知 capability/schema 合成兼容基线为官方 CC-Panes `v0.12.3`，tag commit
-  `7fad08d8a210015eb12af283c720394e7324f471`；本机官方 `cc-panes.exe` 的
+- 当前已知 capability/schema 合成兼容基线为官方 PaneForge `v0.12.3`，tag commit
+  `7fad08d8a210015eb12af283c720394e7324f471`；本机官方 `paneforge.exe` 的
   FileVersion/ProductVersion 已只读确认均为 `0.12.3`。
 - Adapter 的基础 READY 合同要求 MCP protocol `2025-03-26`，并要求
   `launch_task`、`list_sessions`、`list_panes` 存在且输入 schema 满足已使用字段。
@@ -94,15 +94,15 @@ Codex App
 - v0.12.3 的终端 cwd 由 `workspaceName` 命中的 Workspace `path` 优先决定。Companion
   将调用来源的 source `workspaceName` 作为语义/审计元数据保留；Coordinator 始终按
   `projectPath` 生成确定性的
-  `launchWorkspaceName=codex-ccpanes-phase7-<sha256-prefix>` 并传给 `launch_task`，不复用
+  `launchWorkspaceName=codex-paneforge-phase7-<sha256-prefix>` 并传给 `launch_task`，不复用
   与该 projectPath 摘要不一致的同前缀 source workspace。
 - 受控 canary/launch 前，Adapter 可在明确 setup 门内调用
   `create_workspace(name,path=projectPath)` 与
   `add_project_to_workspace(workspaceName,projectPath)`；只读 gate 仍只调用
   list_workspaces/list_projects。已有同名专用 Workspace 但 `path` 与 `projectPath`
   不一致时 fail closed，不用 prompt 或手动目录切换掩盖 cwd 问题。
-- 专用合成 Git 仓库只为该 canary 预声明官方 CC-Panes 运行元数据 ignore 边界：
-  `.ccpanes/history/`、`.ccpanes/projects.csv` 与 `CLAUDE.md`。其它 dirty path 继续
+- 专用合成 Git 仓库只为该 canary 预声明官方 PaneForge 运行元数据 ignore 边界：
+  `.paneforge/history/`、`.paneforge/projects.csv` 与 `CLAUDE.md`。其它 dirty path 继续
   fail closed；该边界不外推到真实用户项目。
 - Canary 报告新增 `sourceWorkspaceName`、`launchWorkspaceName`、期望 projectPath digest、
   observed cwd digest 与 `cwdMatched`；诊断报告不输出完整项目路径。
@@ -116,23 +116,23 @@ Codex App
   逆序响应，expected response 不进入 prompt。Runner 观察到该响应和 `idle`，并使
   Binding/Outbox/Worker/Workflow/Result 收敛到
   `ACTIVE/ACKNOWLEDGED/SUCCEEDED/SUCCEEDED/complete`；未调用 submit/kill/write。
-- 2026-08-11 用户级入口验收从官方 CC-Panes `0.12.3` 新建独立 Codex 对话；该对话确认
-  `codex-ccpanes-companion` 与 `## Required order` 注入、发现 `codex_ccpanes` 工具，
+- 2026-08-11 用户级入口验收从官方 PaneForge `0.12.3` 新建独立 Codex 对话；该对话确认
+  `codex-paneforge-companion` 与 `## Required order` 注入、发现 `codex_paneforge` 工具，
   preflight 返回 READY，再调用一次 synthetic canary。最终
   `launch/submit/kill/write=1/0/0/0`、Session `idle`，Store 状态为
   `ACTIVE/ACKNOWLEDGED/SUCCEEDED/SUCCEEDED/complete`，`launchWorkspaceName` 为
-  `codex-ccpanes-phase7-*` 专用 Workspace，`cwdMatched=true`，
+  `codex-paneforge-phase7-*` 专用 Workspace，`cwdMatched=true`，
   `acceptancePassed=true`。该轮只签署专用合成项目的一次性前台 success path，不外推到
   package/default MCP 注册、后台、多 Worker、真实控制、restart 或 unknown-outcome。
 
 ## 必须满足
 
-- 从 Codex Desktop 环境启动时，CC-Panes 后代进程不得继承任务级 Codex 私有变量。
-- 从开始菜单独立启动 CC-Panes 的原有方式保持可用。
-- 官方 CC-Panes 升级后，只要安装路径和公开 MCP capability 仍满足合同，Companion 不按
+- 从 Codex Desktop 环境启动时，PaneForge 后代进程不得继承任务级 Codex 私有变量。
+- 从开始菜单独立启动 PaneForge 的原有方式保持可用。
+- 官方 PaneForge 升级后，只要安装路径和公开 MCP capability 仍满足合同，Companion 不按
   精确版本字符串阻断。
 - 诊断不读取项目内容，不输出密钥或环境变量值。
-- Companion 任一组件离线、损坏或卸载时，Codex App、Codex CLI 和官方 CC-Panes 仍可
+- Companion 任一组件离线、损坏或卸载时，Codex App、Codex CLI 和官方 PaneForge 仍可
   独立使用。
 - 构建只编译本目录独立 Cargo workspace；使用仓库外独立 `CARGO_TARGET_DIR`，具体路径由维护者环境决定。
   作为 `CARGO_TARGET_DIR`。
@@ -144,7 +144,7 @@ Codex App
 
 - LiveAgent Desktop、Tauri GUI、Gateway、WebUI、workflowd 和持续 runner 不属于本仓库
   运行链路。
-- 不替换官方 CC-Panes EXE，不修改 CC-Panes adapter、数据库、WebView storage 或真实
+- 不替换官方 PaneForge EXE，不修改 PaneForge adapter、数据库、WebView storage 或真实
   项目 Session。
 - `0.2.0-beta.1` 包装和默认安装不注册用户 MCP，不启动后台 Coordinator，不开放通用真实
   Worker 派发。本次开发验收仅在显式 `ConfigPath` 授权、写前备份和 transaction 记录下
@@ -155,50 +155,50 @@ Codex App
   Session ID 明文、Prompt、输出或未经脱敏的 endpoint secret。
 - 专用合成 Git 仓库只能在显式空目录中创建；恢复/清理动作必须同时通过 parent containment
   和 marker digest guard。当前切片只建立登记/恢复合同，不删除目录、不写真实项目。
-- 专用 CC-Panes Workspace/Project gate 当前只读调用 list_workspaces/list_projects，检查
+- 专用 PaneForge Workspace/Project gate 当前只读调用 list_workspaces/list_projects，检查
   create_workspace、add_project_to_workspace 和 `launch_task.workspaceName` capability，并返回
   existing fixture、setup plan 或 path mismatch incompatible；实际 create/add side effect
   只在受控 canary/launch setup 门内执行，且 Workspace `path` 必须等于目标 `projectPath`。
-- fake 单 Worker success canary 使用专用合成 Git 仓库、fake CC-Panes HTTP MCP 和已存在
+- fake 单 Worker success canary 使用专用合成 Git 仓库、fake PaneForge HTTP MCP 和已存在
   Workspace/Project fixture，验证 `workspaceName` 进入 `launch_task` payload、
   ExternalBinding 记录 session ref 且聚合结果完整。另有一次前台真实 canary 验证同一
-  Coordinator→Adapter seam 可在官方 CC-Panes `0.12.3` 新建 Codex 对话并收敛成功；该证据
+  Coordinator→Adapter seam 可在官方 PaneForge `0.12.3` 新建 Codex 对话并收敛成功；该证据
   不外推到后台、多 Worker、取消、restart 或 unknown-outcome 真实执行。
-- cancellation canary 当前仅使用同类专用合成 Git 仓库、fake CC-Panes HTTP MCP 和已存在
+- cancellation canary 当前仅使用同类专用合成 Git 仓库、fake PaneForge HTTP MCP 和已存在
   Workspace/Project fixture，验证 `workflow_cancel`/`worker_cancel` 经 Coordinator 进入
   `CANCEL_REQUESTED`，只产生一个 `kill_session` 控制 outbox，fake Session 被 kill 后
-  Binding/Worker/Workflow/Result 收敛；它不代表真实 CC-Panes Session 控制已接线。
+  Binding/Worker/Workflow/Result 收敛；它不代表真实 PaneForge Session 控制已接线。
 - Coordinator restart canary 当前仅重新打开同一合成 SQLite DB 中的 Coordinator Runtime，
   验证重启前已启动的 fake Worker 状态、Binding session ref、Outbox ACK 和 Result 聚合可继续；
-  它不代表后台守护、进程 supervisor 或真实 CC-Panes restart 已接线。
-- dropped launch response / unknown dispatch canary 当前仅使用 fake CC-Panes 验证 `launch_task`
+  它不代表后台守护、进程 supervisor 或真实 PaneForge restart 已接线。
+- dropped launch response / unknown dispatch canary 当前仅使用 fake PaneForge 验证 `launch_task`
   外部副作用已产生但响应丢失时，Store 在错误返回路径立即将 Outbox/Binding 记录为
   `RESULT_UNKNOWN`、Worker 记录为 `DISPATCH_UNKNOWN`，reopen 后保持该状态，随后通过
   list_sessions/list_panes reconcile 绑定原 fake Session 并聚合结果；它不代表真实
-  CC-Panes unknown outcome 已验收。
-- Token/discovery rotation canary 当前仅使用 fake CC-Panes endpoint A/B 验证旧 discovery/token
+  PaneForge unknown outcome 已验收。
+- Token/discovery rotation canary 当前仅使用 fake PaneForge endpoint A/B 验证旧 discovery/token
   成功、旧 token 对新 endpoint 返回 `authorization_failed`、新 discovery generation/token
   刷新 readiness 与 capability digest，且 sanitized report 与 fake request record 不包含 Token
-  或 Authorization 明文；它不读取真实 discovery 文件。真实 CC-Panes 更新后再资格由独立的
+  或 Authorization 明文；它不读取真实 discovery 文件。真实 PaneForge 更新后再资格由独立的
   read-only dispatch gate 签署，不由该 fake rotation canary 外推。
-- CC-Panes process restart canary 当前仅使用 fake endpoint A 停止与 fake endpoint B 重启，
+- PaneForge process restart canary 当前仅使用 fake endpoint A 停止与 fake endpoint B 重启，
   并以 seeded synthetic Session 验证旧 endpoint `adapter_not_ready`/DEGRADED、既有
   Workflow/Worker/Binding 可经 MCP 查询、tick 不重复 `launch_task`、新 endpoint READY 后
-  reconcile 与 Result 聚合 complete；它不停止真实 CC-Panes，不代表真实进程 supervisor、
+  reconcile 与 Result 聚合 complete；它不停止真实 PaneForge，不代表真实进程 supervisor、
   真实 Session 恢复或真实重启验收已签署。
-- multi-worker controlled capacity canary 当前仅使用专用合成 Git 仓库、fake CC-Panes HTTP
+- multi-worker controlled capacity canary 当前仅使用专用合成 Git 仓库、fake PaneForge HTTP
   MCP 和已存在 Workspace/Project fixture，验证 MCP 创建 6 个只读 Step、Coordinator 在
   host/dispatch/per-workflow cap=3 下分两批派发，active/queued 计数有界，Binding/Session
   与 `clientRequestId` 唯一，`stepId` 来源和聚合结果完整；它不代表真实多 Session 派发、
-  真实 CC-Panes 容量或真实 Worker 池验收已签署。
+  真实 PaneForge 容量或真实 Worker 池验收已签署。
 - Phase 8 package inventory and manifest local contract 当前仅修改本地包装脚本与隔离包验证：
-  包内必须包含 `CodexCCPanes.exe`、`codex-ccpanes-coordinator.exe`、
-  `codex-ccpanes-mcp.exe` 和既有 `codex-ccpanes.exe`；`ARTIFACT_MANIFEST.json` 必须声明
+  包内必须包含 `CodexPaneForge.exe`、`codex-paneforge-coordinator.exe`、
+  `codex-paneforge-mcp.exe` 和既有 `codex-paneforge.exe`；`ARTIFACT_MANIFEST.json` 必须声明
   三组件 inventory、副作用边界、`SHA256SUMS` 全覆盖和 `DEPENDENCIES.json`；安装状态只登记
   Companion 自己的组件路径，不注册用户 MCP、不启动后台 Coordinator、不修改官方 Codex、
-  官方 CC-Panes、用户配置或真实项目。
+  官方 PaneForge、用户配置或真实项目。
 - Phase 8 synthetic Codex MCP config transaction contract 当前仅通过显式临时 `ConfigPath`
-  验证 `Configure-CodexMcp.ps1`：写入托管 `codex_ccpanes` MCP block 前备份原文件，
+  验证 `Configure-CodexMcp.ps1`：写入托管 `codex_paneforge` MCP block 前备份原文件，
   `Repair` 不重复 block，`Rollback` 按事务恢复原 SHA-256 或 absent 状态；安装器仅在显式
   `-ConfigureCodexMcp -CodexConfigPath <path>` 时调用 apply/repair，卸载器仅在显式
   `-RemoveCodexMcp -CodexConfigPath <path>` 时移除托管 block；默认安装仍不调用该脚本，
@@ -234,7 +234,7 @@ workflow_result
 ```
 
 `worker_dispatch.repository.workspaceName` 是可选公共字段；仅用于绑定已通过 gate 的专用
-CC-Panes Workspace，必须非空且不含控制字符。未提供时保留既有单仓库合成派发合同。
+PaneForge Workspace，必须非空且不含控制字符。未提供时保留既有单仓库合成派发合同。
 
 公共错误码由 `coordination-core` 拥有，至少包括：
 
@@ -269,4 +269,4 @@ internal_invariant_violation
 
 `0.2.0-beta.1` 三组件测试版还必须通过 Coordination Plane 门禁：Core/Protocol 合同测试、
 Store/Outbox 恢复、Coordinator runtime 调度、MCP stdio、fake Adapter E2E、fan-out/
-fan-in 容量、故障注入、受控真实 CC-Panes canary、安装/升级/卸载与敏感信息扫描。
+fan-in 容量、故障注入、受控真实 PaneForge canary、安装/升级/卸载与敏感信息扫描。

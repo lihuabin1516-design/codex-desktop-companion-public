@@ -5,36 +5,36 @@ use std::path::Path;
 use coordination_core::{CoordinationError, ErrorCode};
 use serde_json::Value;
 
-use crate::{AdapterHeader, CcpanesEndpointConfig};
+use crate::{AdapterHeader, PaneForgeEndpointConfig};
 
-pub fn read_ccpanes_discovery_file(
+pub fn read_paneforge_discovery_file(
     path: impl AsRef<Path>,
     discovery_generation: u64,
-) -> Result<CcpanesEndpointConfig, CoordinationError> {
+) -> Result<PaneForgeEndpointConfig, CoordinationError> {
     let content = fs::read_to_string(path.as_ref()).map_err(|error| {
         CoordinationError::new(
             ErrorCode::AdapterNotReady,
-            format!("read cc-panes discovery file failed: {error}"),
+            format!("read paneforge discovery file failed: {error}"),
         )
     })?;
     let document: Value =
         serde_json::from_str(content.trim_start_matches('\u{feff}')).map_err(|error| {
             CoordinationError::new(
                 ErrorCode::InvalidRequest,
-                format!("decode cc-panes discovery JSON failed: {error}"),
+                format!("decode paneforge discovery JSON failed: {error}"),
             )
         })?;
-    ccpanes_endpoint_from_discovery_value(&document, discovery_generation)
+    paneforge_endpoint_from_discovery_value(&document, discovery_generation)
 }
 
-pub fn ccpanes_endpoint_from_discovery_value(
+pub fn paneforge_endpoint_from_discovery_value(
     document: &Value,
     discovery_generation: u64,
-) -> Result<CcpanesEndpointConfig, CoordinationError> {
+) -> Result<PaneForgeEndpointConfig, CoordinationError> {
     if let Some(server) = document
         .get("mcpServers")
         .and_then(Value::as_object)
-        .and_then(|servers| servers.get("ccpanes"))
+        .and_then(|servers| servers.get("paneforge"))
         .and_then(Value::as_object)
     {
         return endpoint_from_mcp_server(server, discovery_generation);
@@ -45,7 +45,7 @@ pub fn ccpanes_endpoint_from_discovery_value(
 fn endpoint_from_mcp_server(
     server: &serde_json::Map<String, Value>,
     discovery_generation: u64,
-) -> Result<CcpanesEndpointConfig, CoordinationError> {
+) -> Result<PaneForgeEndpointConfig, CoordinationError> {
     let endpoint = server
         .get("url")
         .and_then(Value::as_str)
@@ -53,7 +53,7 @@ fn endpoint_from_mcp_server(
         .ok_or_else(|| {
             CoordinationError::new(
                 ErrorCode::AdapterNotReady,
-                "cc-panes discovery URL is missing",
+                "paneforge discovery URL is missing",
             )
         })?;
     let headers = server
@@ -71,13 +71,13 @@ fn endpoint_from_mcp_server(
         })
         .transpose()?
         .unwrap_or_default();
-    CcpanesEndpointConfig::new(endpoint.to_owned(), headers, discovery_generation)
+    PaneForgeEndpointConfig::new(endpoint.to_owned(), headers, discovery_generation)
 }
 
 fn endpoint_from_v0123_daemon_manifest(
     document: &Value,
     discovery_generation: u64,
-) -> Result<CcpanesEndpointConfig, CoordinationError> {
+) -> Result<PaneForgeEndpointConfig, CoordinationError> {
     let address = document
         .get("addr")
         .and_then(Value::as_str)
@@ -86,7 +86,7 @@ fn endpoint_from_v0123_daemon_manifest(
         .ok_or_else(|| {
             CoordinationError::new(
                 ErrorCode::AdapterNotReady,
-                "cc-panes discovery must contain mcpServers.ccpanes or a loopback daemon addr",
+                "paneforge discovery must contain mcpServers.paneforge or a loopback daemon addr",
             )
         })?;
     let token = document
@@ -96,7 +96,7 @@ fn endpoint_from_v0123_daemon_manifest(
         .ok_or_else(|| {
             CoordinationError::new(
                 ErrorCode::AdapterNotReady,
-                "cc-panes daemon discovery token is missing",
+                "paneforge daemon discovery token is missing",
             )
         })?;
     let host = if address.is_ipv6() {
@@ -104,7 +104,7 @@ fn endpoint_from_v0123_daemon_manifest(
     } else {
         address.ip().to_string()
     };
-    CcpanesEndpointConfig::new(
+    PaneForgeEndpointConfig::new(
         format!("http://{host}:{}/mcp", address.port()),
         vec![AdapterHeader::new(
             "Authorization",
@@ -122,10 +122,10 @@ mod tests {
 
     #[test]
     fn discovery_value_extracts_endpoint_and_headers() {
-        let config = ccpanes_endpoint_from_discovery_value(
+        let config = paneforge_endpoint_from_discovery_value(
             &json!({
                 "mcpServers": {
-                    "ccpanes": {
+                    "paneforge": {
                         "url": "http://127.0.0.1:39000/mcp",
                         "headers": {"Authorization": "Bearer TOKEN"}
                     }
@@ -141,13 +141,13 @@ mod tests {
 
     #[test]
     fn discovery_missing_server_fails_closed() {
-        let error = ccpanes_endpoint_from_discovery_value(&json!({}), 1).expect_err("missing");
+        let error = paneforge_endpoint_from_discovery_value(&json!({}), 1).expect_err("missing");
         assert_eq!(error.code, ErrorCode::AdapterNotReady);
     }
 
     #[test]
     fn v0123_daemon_manifest_extracts_loopback_endpoint_and_bearer_token() {
-        let config = ccpanes_endpoint_from_discovery_value(
+        let config = paneforge_endpoint_from_discovery_value(
             &json!({
                 "addr": "127.0.0.1:62674",
                 "token": "TOKEN_PLACEHOLDER",
@@ -172,7 +172,7 @@ mod tests {
             json!({"addr": "example.com:62674", "token": "TOKEN"}),
             json!({"addr": "127.0.0.1:62674", "token": ""}),
         ] {
-            let error = ccpanes_endpoint_from_discovery_value(&document, 1)
+            let error = paneforge_endpoint_from_discovery_value(&document, 1)
                 .expect_err("unsafe daemon manifest must fail closed");
             assert_eq!(error.code, ErrorCode::AdapterNotReady);
         }

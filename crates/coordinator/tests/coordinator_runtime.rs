@@ -189,7 +189,7 @@ fn dispatch_request(
         binding_id: binding_id(&format!("binding-{suffix}")),
         objective: format!("inspect {suffix}"),
         access: AccessMode::Read,
-        adapter: "cc-panes-http-mcp".to_owned(),
+        adapter: "paneforge-http-mcp".to_owned(),
         dispatch_marker: format!("marker-{suffix}"),
         prompt_sha256: format!("{:064x}", suffix.len()),
         payload: json!({

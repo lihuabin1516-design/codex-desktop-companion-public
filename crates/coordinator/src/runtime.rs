@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 use std::path::{Path, PathBuf};
 
-use ccpanes_adapter::dedicated_workspace_name_for_project_path;
+use paneforge_adapter::dedicated_workspace_name_for_project_path;
 use coordination_core::{
     AccessMode, BudgetSpec, CallerId, CoordinationCommand, CoordinationError, CoordinationEvent,
     CoordinationQuery, ErrorCode, ExecutorSpec, FanInPolicy, IdempotencyKey, LeaseId, OutboxId,
@@ -204,11 +204,11 @@ impl CoordinatorRuntime {
                 protocol_version: IPC_SCHEMA_VERSION.to_owned(),
             }),
             IpcMessage::Health(request) => self.handle_health_request(request),
-            IpcMessage::CcpanesPreflight(input) => {
-                crate::run_ccpanes_preflight(input).map(|value| IpcResponse::Json { value })
+            IpcMessage::PaneForgePreflight(input) => {
+                crate::run_paneforge_preflight(input).map(|value| IpcResponse::Json { value })
             }
-            IpcMessage::CcpanesSyntheticCanary(input) => {
-                crate::run_ccpanes_synthetic_canary(input, &self.data_dir)
+            IpcMessage::PaneForgeSyntheticCanary(input) => {
+                crate::run_paneforge_synthetic_canary(input, &self.data_dir)
                     .map(|value| IpcResponse::Json { value })
             }
             IpcMessage::Command(command) => self.handle_command(*command),
@@ -766,7 +766,7 @@ impl CoordinatorRuntime {
                 binding_id,
                 objective: step.objective.clone(),
                 access: step.access,
-                adapter: "cc-panes-http-mcp".to_owned(),
+                adapter: "paneforge-http-mcp".to_owned(),
                 dispatch_marker,
                 prompt_sha256,
                 payload,
@@ -1094,7 +1094,7 @@ impl CoordinatorRuntime {
                 binding_id,
                 objective,
                 access,
-                adapter: "cc-panes-http-mcp".to_owned(),
+                adapter: "paneforge-http-mcp".to_owned(),
                 dispatch_marker,
                 prompt_sha256,
                 payload,
@@ -1246,7 +1246,7 @@ fn launch_task_payload(
     let mut payload = json!({
         "projectPath": repository.path.clone(),
         "prompt": format!("{objective}\n\n[coordination-marker:{dispatch_marker}]\n[prompt-sha256:{prompt_sha256}]"),
-        "title": format!("codex-ccpanes {dispatch_marker}"),
+        "title": format!("codex-paneforge {dispatch_marker}"),
         "cliTool": cli_tool,
         "clientRequestId": idempotency_key.request_id.as_str(),
         "workspaceName": launch_workspace_name,

@@ -8,10 +8,10 @@ pub const WORKER_DISPATCH_SCHEMA_VERSION: &str = "coordination.worker-dispatch/v
 pub const WORKER_DISPATCH_ACCEPTED_SCHEMA_VERSION: &str =
     "coordination.worker-dispatch.accepted/v1beta1";
 pub const WORKER_CANCEL_SCHEMA_VERSION: &str = "coordination.worker-cancel/v1beta1";
-pub const CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION: &str =
-    "coordination.ccpanes-preflight-request/v1beta1";
-pub const CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION: &str =
-    "coordination.ccpanes-synthetic-canary-request/v1beta1";
+pub const PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION: &str =
+    "coordination.paneforge-preflight-request/v1beta1";
+pub const PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION: &str =
+    "coordination.paneforge-synthetic-canary-request/v1beta1";
 pub const WORKFLOW_CREATE_SCHEMA_VERSION: &str = "coordination.workflow-create/v1beta1";
 pub const WORKFLOW_START_SCHEMA_VERSION: &str = "coordination.workflow-start/v1beta1";
 pub const WORKFLOW_CANCEL_SCHEMA_VERSION: &str = "coordination.workflow-cancel/v1beta1";

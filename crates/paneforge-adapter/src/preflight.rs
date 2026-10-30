@@ -7,11 +7,11 @@ use sha2::{Digest, Sha256};
 
 use crate::types::find_string;
 use crate::{
-    AdapterReadiness, AdapterStatusSnapshot, CcpanesAdapter, SanitizedEndpointConfig,
-    CCPANES_ADAPTER_CONTRACT_VERSION,
+    AdapterReadiness, AdapterStatusSnapshot, PaneForgeAdapter, SanitizedEndpointConfig,
+    PANEFORGE_ADAPTER_CONTRACT_VERSION,
 };
 
-pub const READ_ONLY_PREFLIGHT_CONTRACT_VERSION: &str = "ccpanes-adapter-readonly-preflight/v1beta1";
+pub const READ_ONLY_PREFLIGHT_CONTRACT_VERSION: &str = "paneforge-adapter-readonly-preflight/v1beta1";
 
 const READ_ONLY_OPERATIONS: &[&str] = &[
     "initialize",
@@ -49,13 +49,13 @@ pub struct SessionInventorySnapshot {
     pub session_id_digests: Vec<String>,
 }
 
-pub fn run_read_only_preflight(adapter: &mut CcpanesAdapter) -> ReadOnlyPreflightReport {
+pub fn run_read_only_preflight(adapter: &mut PaneForgeAdapter) -> ReadOnlyPreflightReport {
     let endpoint = adapter.config().sanitized();
     match adapter.discover() {
         Ok(capability) => match read_session_inventory(adapter) {
             Ok(session_inventory) => ReadOnlyPreflightReport {
                 contract_version: READ_ONLY_PREFLIGHT_CONTRACT_VERSION.to_owned(),
-                adapter_contract_version: CCPANES_ADAPTER_CONTRACT_VERSION.to_owned(),
+                adapter_contract_version: PANEFORGE_ADAPTER_CONTRACT_VERSION.to_owned(),
                 readiness: AdapterReadiness::Ready,
                 endpoint,
                 read_only_operations: read_only_operations(),
@@ -72,7 +72,7 @@ pub fn run_read_only_preflight(adapter: &mut CcpanesAdapter) -> ReadOnlyPrefligh
             let readiness = readiness_for_error(&error);
             ReadOnlyPreflightReport {
                 contract_version: READ_ONLY_PREFLIGHT_CONTRACT_VERSION.to_owned(),
-                adapter_contract_version: CCPANES_ADAPTER_CONTRACT_VERSION.to_owned(),
+                adapter_contract_version: PANEFORGE_ADAPTER_CONTRACT_VERSION.to_owned(),
                 readiness,
                 endpoint,
                 read_only_operations: read_only_operations(),
@@ -96,38 +96,38 @@ pub fn require_dispatch_requalification(
         AdapterReadiness::Degraded => {
             return Err(CoordinationError::new(
                 ErrorCode::AdapterNotReady,
-                "CC-Panes read-only preflight is degraded",
+                "PaneForge read-only preflight is degraded",
             ));
         }
         AdapterReadiness::Incompatible => {
             return Err(CoordinationError::new(
                 ErrorCode::AdapterIncompatible,
-                "CC-Panes read-only preflight is incompatible",
+                "PaneForge read-only preflight is incompatible",
             ));
         }
     }
     if report.external_worker_side_effects {
         return Err(CoordinationError::new(
             ErrorCode::InternalInvariantViolation,
-            "CC-Panes read-only preflight reported external Worker side effects",
+            "PaneForge read-only preflight reported external Worker side effects",
         ));
     }
     let capability = report.status.capability.as_ref().ok_or_else(|| {
         CoordinationError::new(
             ErrorCode::AdapterNotReady,
-            "CC-Panes read-only preflight did not produce a capability snapshot",
+            "PaneForge read-only preflight did not produce a capability snapshot",
         )
     })?;
     if !capability.dispatch_ready {
         return Err(CoordinationError::new(
             ErrorCode::AdapterIncompatible,
-            "CC-Panes dispatch requalification requires get_session_status and get_session_output",
+            "PaneForge dispatch requalification requires get_session_status and get_session_output",
         ));
     }
     if report.session_inventory.is_none() {
         return Err(CoordinationError::new(
             ErrorCode::AdapterNotReady,
-            "CC-Panes read-only preflight did not produce a Session inventory",
+            "PaneForge read-only preflight did not produce a Session inventory",
         ));
     }
     Ok(())
@@ -190,7 +190,7 @@ pub fn session_inventory_from_values(
 }
 
 fn read_session_inventory(
-    adapter: &mut CcpanesAdapter,
+    adapter: &mut PaneForgeAdapter,
 ) -> Result<SessionInventorySnapshot, CoordinationError> {
     let sessions = adapter.list_sessions()?;
     let panes = adapter.list_panes()?;
@@ -207,7 +207,7 @@ fn degraded_report(
     status.capability = capability.or(status.capability);
     ReadOnlyPreflightReport {
         contract_version: READ_ONLY_PREFLIGHT_CONTRACT_VERSION.to_owned(),
-        adapter_contract_version: CCPANES_ADAPTER_CONTRACT_VERSION.to_owned(),
+        adapter_contract_version: PANEFORGE_ADAPTER_CONTRACT_VERSION.to_owned(),
         readiness: status.readiness,
         endpoint,
         read_only_operations: read_only_operations(),
@@ -305,7 +305,7 @@ fn object_entries<'a>(
 fn incompatible_inventory_shape(tool_name: &str, expected: &str) -> CoordinationError {
     CoordinationError::new(
         ErrorCode::AdapterIncompatible,
-        format!("CC-Panes {tool_name} response must contain {expected}"),
+        format!("PaneForge {tool_name} response must contain {expected}"),
     )
 }
 

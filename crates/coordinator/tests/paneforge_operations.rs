@@ -4,8 +4,8 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::{Mutex, OnceLock};
 
-use ccpanes_adapter::{
-    FakeCcpanesBehavior, FakeCcpanesServer, TOOL_GET_SESSION_OUTPUT, TOOL_KILL_SESSION,
+use paneforge_adapter::{
+    FakePaneForgeBehavior, FakePaneForgeServer, TOOL_GET_SESSION_OUTPUT, TOOL_KILL_SESSION,
     TOOL_LAUNCH_TASK, TOOL_SUBMIT_TO_SESSION, TOOL_WRITE_TO_SESSION,
 };
 use coordination_coordinator::{
@@ -13,27 +13,27 @@ use coordination_coordinator::{
 };
 use coordination_core::{ErrorCode, RequestId};
 use coordination_protocol::{
-    CcpanesPreflightInput, CcpanesSyntheticCanaryInput, IpcEnvelope, IpcMessage, IpcResponse,
-    CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION, CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
+    PaneForgePreflightInput, PaneForgeSyntheticCanaryInput, IpcEnvelope, IpcMessage, IpcResponse,
+    PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION, PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
     IPC_SCHEMA_VERSION,
 };
 use serde_json::json;
 use tempfile::tempdir;
 
-const DISCOVERY_ENV: &str = "CODEX_CCPANES_DISCOVERY_FILE";
+const DISCOVERY_ENV: &str = "CODEX_PANEFORGE_DISCOVERY_FILE";
 
 #[test]
-fn ccpanes_preflight_returns_ready_report_without_external_worker_side_effects() {
+fn paneforge_preflight_returns_ready_report_without_external_worker_side_effects() {
     let dir = tempdir().unwrap();
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior::default()).unwrap();
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior::default()).unwrap();
     let discovery = write_discovery(dir.path(), &fake);
     let mut runtime = open_runtime(dir.path());
 
     let response = runtime.handle_ipc(IpcEnvelope {
         schema_version: IPC_SCHEMA_VERSION.to_owned(),
-        request_id: RequestId::try_new("ccpanes-preflight-ready").unwrap(),
-        message: IpcMessage::CcpanesPreflight(CcpanesPreflightInput {
-            schema_version: CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION.to_owned(),
+        request_id: RequestId::try_new("paneforge-preflight-ready").unwrap(),
+        message: IpcMessage::PaneForgePreflight(PaneForgePreflightInput {
+            schema_version: PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION.to_owned(),
             discovery_path: Some(discovery.to_string_lossy().into_owned()),
             discovery_generation: 3,
             connect_timeout_ms: 100,
@@ -55,16 +55,16 @@ fn ccpanes_preflight_returns_ready_report_without_external_worker_side_effects()
 }
 
 #[test]
-fn ccpanes_preflight_without_discovery_returns_adapter_not_ready() {
+fn paneforge_preflight_without_discovery_returns_adapter_not_ready() {
     without_discovery_env(|| {
         let dir = tempdir().unwrap();
         let mut runtime = open_runtime(dir.path());
 
         let response = runtime.handle_ipc(IpcEnvelope {
             schema_version: IPC_SCHEMA_VERSION.to_owned(),
-            request_id: RequestId::try_new("ccpanes-preflight-missing").unwrap(),
-            message: IpcMessage::CcpanesPreflight(CcpanesPreflightInput {
-                schema_version: CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION.to_owned(),
+            request_id: RequestId::try_new("paneforge-preflight-missing").unwrap(),
+            message: IpcMessage::PaneForgePreflight(PaneForgePreflightInput {
+                schema_version: PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION.to_owned(),
                 discovery_path: None,
                 discovery_generation: 1,
                 connect_timeout_ms: 100,
@@ -78,17 +78,17 @@ fn ccpanes_preflight_without_discovery_returns_adapter_not_ready() {
 }
 
 #[test]
-fn ccpanes_preflight_reports_typed_incompatible_when_dispatch_requalification_fails() {
+fn paneforge_preflight_reports_typed_incompatible_when_dispatch_requalification_fails() {
     let dir = tempdir().unwrap();
-    let behavior = FakeCcpanesBehavior::default();
+    let behavior = FakePaneForgeBehavior::default();
     let tools = behavior
         .tools
         .into_iter()
         .filter(|tool| tool["name"] != TOOL_GET_SESSION_OUTPUT)
         .collect();
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         tools,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
     let discovery = write_discovery(dir.path(), &fake);
@@ -96,9 +96,9 @@ fn ccpanes_preflight_reports_typed_incompatible_when_dispatch_requalification_fa
 
     let response = runtime.handle_ipc(IpcEnvelope {
         schema_version: IPC_SCHEMA_VERSION.to_owned(),
-        request_id: RequestId::try_new("ccpanes-preflight-incompatible").unwrap(),
-        message: IpcMessage::CcpanesPreflight(CcpanesPreflightInput {
-            schema_version: CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION.to_owned(),
+        request_id: RequestId::try_new("paneforge-preflight-incompatible").unwrap(),
+        message: IpcMessage::PaneForgePreflight(PaneForgePreflightInput {
+            schema_version: PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION.to_owned(),
             discovery_path: Some(discovery.to_string_lossy().into_owned()),
             discovery_generation: 4,
             connect_timeout_ms: 100,
@@ -122,17 +122,17 @@ fn ccpanes_preflight_reports_typed_incompatible_when_dispatch_requalification_fa
 }
 
 #[test]
-fn ccpanes_synthetic_canary_launches_once_and_converges_store_without_control_writes() {
+fn paneforge_synthetic_canary_launches_once_and_converges_store_without_control_writes() {
     let dir = tempdir().unwrap();
     let registration =
-        prepare_synthetic_git_repository(dir.path(), "global-ccpanes-canary").unwrap();
-    let workspace_name = "codex-ccpanes-phase7-v0123";
+        prepare_synthetic_git_repository(dir.path(), "global-paneforge-canary").unwrap();
+    let workspace_name = "codex-paneforge-phase7-v0123";
     let project_name = Path::new(&registration.repository.path)
         .file_name()
         .unwrap()
         .to_string_lossy()
         .into_owned();
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
         workspaces: vec![json!({"id": "workspace-id", "name": workspace_name})],
         projects: vec![json!({
@@ -141,7 +141,7 @@ fn ccpanes_synthetic_canary_launches_once_and_converges_store_without_control_wr
             "path": registration.repository.path,
             "workspaceName": workspace_name
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
     let discovery = write_discovery(dir.path(), &fake);
@@ -149,9 +149,9 @@ fn ccpanes_synthetic_canary_launches_once_and_converges_store_without_control_wr
 
     let response = runtime.handle_ipc(IpcEnvelope {
         schema_version: IPC_SCHEMA_VERSION.to_owned(),
-        request_id: RequestId::try_new("ccpanes-canary-envelope").unwrap(),
-        message: IpcMessage::CcpanesSyntheticCanary(CcpanesSyntheticCanaryInput {
-            schema_version: CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION.to_owned(),
+        request_id: RequestId::try_new("paneforge-canary-envelope").unwrap(),
+        message: IpcMessage::PaneForgeSyntheticCanary(PaneForgeSyntheticCanaryInput {
+            schema_version: PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION.to_owned(),
             request_id: RequestId::try_new("global-canary-1").unwrap(),
             discovery_path: Some(discovery.to_string_lossy().into_owned()),
             project_path: registration.repository.path,
@@ -206,18 +206,18 @@ fn ccpanes_synthetic_canary_launches_once_and_converges_store_without_control_wr
 }
 
 #[test]
-fn ccpanes_synthetic_canary_fails_closed_for_dirty_or_unregistered_fixture() {
+fn paneforge_synthetic_canary_fails_closed_for_dirty_or_unregistered_fixture() {
     let dir = tempdir().unwrap();
     let registration =
-        prepare_synthetic_git_repository(dir.path(), "dirty-global-ccpanes-canary").unwrap();
+        prepare_synthetic_git_repository(dir.path(), "dirty-global-paneforge-canary").unwrap();
     fs::write(
         Path::new(&registration.repository.path).join("dirty.txt"),
         b"dirty",
     )
     .unwrap();
-    let workspace_name = "codex-ccpanes-phase7-v0123-dirty";
+    let workspace_name = "codex-paneforge-phase7-v0123-dirty";
     let project_name = "dirty-compat-fixture";
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
         workspaces: vec![json!({"id": "workspace-id", "name": workspace_name})],
         projects: vec![json!({
@@ -226,15 +226,15 @@ fn ccpanes_synthetic_canary_fails_closed_for_dirty_or_unregistered_fixture() {
             "path": registration.repository.path,
             "workspaceName": workspace_name
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
     let discovery = write_discovery(dir.path(), &fake);
     let mut runtime = open_runtime(dir.path());
     let dirty_response = runtime.handle_ipc(IpcEnvelope {
         schema_version: IPC_SCHEMA_VERSION.to_owned(),
-        request_id: RequestId::try_new("ccpanes-canary-dirty-envelope").unwrap(),
-        message: IpcMessage::CcpanesSyntheticCanary(canary_input(
+        request_id: RequestId::try_new("paneforge-canary-dirty-envelope").unwrap(),
+        message: IpcMessage::PaneForgeSyntheticCanary(canary_input(
             "dirty-canary",
             &discovery,
             &registration.repository.path,
@@ -256,17 +256,17 @@ fn ccpanes_synthetic_canary_fails_closed_for_dirty_or_unregistered_fixture() {
     let clean_dir = tempdir().unwrap();
     let clean_registration =
         prepare_synthetic_git_repository(clean_dir.path(), "unregistered-global-canary").unwrap();
-    let unregistered_fake = FakeCcpanesServer::start(FakeCcpanesBehavior::default()).unwrap();
+    let unregistered_fake = FakePaneForgeServer::start(FakePaneForgeBehavior::default()).unwrap();
     let unregistered_discovery = write_discovery(clean_dir.path(), &unregistered_fake);
     let mut clean_runtime = open_runtime(clean_dir.path());
     let unregistered_response = clean_runtime.handle_ipc(IpcEnvelope {
         schema_version: IPC_SCHEMA_VERSION.to_owned(),
-        request_id: RequestId::try_new("ccpanes-canary-unregistered-envelope").unwrap(),
-        message: IpcMessage::CcpanesSyntheticCanary(canary_input(
+        request_id: RequestId::try_new("paneforge-canary-unregistered-envelope").unwrap(),
+        message: IpcMessage::PaneForgeSyntheticCanary(canary_input(
             "unregistered-canary",
             &unregistered_discovery,
             &clean_registration.repository.path,
-            "codex-ccpanes-phase7-v0123-unregistered",
+            "codex-paneforge-phase7-v0123-unregistered",
             "unregistered-fixture",
         )),
     });
@@ -283,18 +283,18 @@ fn ccpanes_synthetic_canary_fails_closed_for_dirty_or_unregistered_fixture() {
 }
 
 #[test]
-fn ccpanes_synthetic_canary_requires_committed_synthetic_repository_marker() {
+fn paneforge_synthetic_canary_requires_committed_synthetic_repository_marker() {
     let dir = tempdir().unwrap();
     let registration =
-        prepare_synthetic_git_repository(dir.path(), "markerless-global-ccpanes-canary").unwrap();
+        prepare_synthetic_git_repository(dir.path(), "markerless-global-paneforge-canary").unwrap();
     let repository_path = Path::new(&registration.repository.path);
-    fs::remove_file(repository_path.join(".codex-ccpanes-synthetic-repository.json")).unwrap();
+    fs::remove_file(repository_path.join(".codex-paneforge-synthetic-repository.json")).unwrap();
     let commit = Command::new("git")
         .args([
             "-c",
-            "user.name=Codex CC-Panes Synthetic Fixture",
+            "user.name=Codex PaneForge Synthetic Fixture",
             "-c",
-            "user.email=codex-ccpanes-synthetic@example.invalid",
+            "user.email=codex-paneforge-synthetic@example.invalid",
             "-c",
             "commit.gpgsign=false",
             "commit",
@@ -311,9 +311,9 @@ fn ccpanes_synthetic_canary_requires_committed_synthetic_repository_marker() {
         String::from_utf8_lossy(&commit.stderr)
     );
 
-    let workspace_name = "codex-ccpanes-phase7-v0123-markerless";
+    let workspace_name = "codex-paneforge-phase7-v0123-markerless";
     let project_name = "markerless-compat-fixture";
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
         workspaces: vec![json!({"id": "workspace-id", "name": workspace_name})],
         projects: vec![json!({
@@ -322,7 +322,7 @@ fn ccpanes_synthetic_canary_requires_committed_synthetic_repository_marker() {
             "path": registration.repository.path,
             "workspace": workspace_name
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
     let discovery = write_discovery(dir.path(), &fake);
@@ -330,8 +330,8 @@ fn ccpanes_synthetic_canary_requires_committed_synthetic_repository_marker() {
 
     let response = runtime.handle_ipc(IpcEnvelope {
         schema_version: IPC_SCHEMA_VERSION.to_owned(),
-        request_id: RequestId::try_new("ccpanes-canary-markerless-envelope").unwrap(),
-        message: IpcMessage::CcpanesSyntheticCanary(canary_input(
+        request_id: RequestId::try_new("paneforge-canary-markerless-envelope").unwrap(),
+        message: IpcMessage::PaneForgeSyntheticCanary(canary_input(
             "markerless-canary",
             &discovery,
             &registration.repository.path,
@@ -353,19 +353,19 @@ fn open_runtime(root: &Path) -> CoordinatorRuntime {
     CoordinatorRuntime::open(
         data_dir.join("coordination.db"),
         &data_dir,
-        "ccpanes-operations-test",
+        "paneforge-operations-test",
         CoordinatorConfig::default(),
     )
     .unwrap()
 }
 
-fn write_discovery(root: &Path, fake: &FakeCcpanesServer) -> std::path::PathBuf {
+fn write_discovery(root: &Path, fake: &FakePaneForgeServer) -> std::path::PathBuf {
     let discovery = root.join("mcp-orchestrator.json");
     fs::write(
         &discovery,
         serde_json::to_vec(&json!({
             "mcpServers": {
-                "ccpanes": {
+                "paneforge": {
                     "url": fake.endpoint(),
                     "headers": {}
                 }
@@ -383,9 +383,9 @@ fn canary_input(
     project_path: &str,
     workspace_name: &str,
     project_name: &str,
-) -> CcpanesSyntheticCanaryInput {
-    CcpanesSyntheticCanaryInput {
-        schema_version: CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION.to_owned(),
+) -> PaneForgeSyntheticCanaryInput {
+    PaneForgeSyntheticCanaryInput {
+        schema_version: PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION.to_owned(),
         request_id: RequestId::try_new(request_id).unwrap(),
         discovery_path: Some(discovery.to_string_lossy().into_owned()),
         project_path: project_path.to_owned(),

@@ -4,7 +4,7 @@ use coordination_core::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::mcp::{CcpanesPreflightInput, CcpanesSyntheticCanaryInput};
+use crate::mcp::{PaneForgePreflightInput, PaneForgeSyntheticCanaryInput};
 use crate::version::{require_schema_version, IPC_SCHEMA_VERSION};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -34,8 +34,8 @@ impl IpcEnvelope {
 pub enum IpcMessage {
     Hello(IpcHello),
     Health(IpcHealthRequest),
-    CcpanesPreflight(CcpanesPreflightInput),
-    CcpanesSyntheticCanary(CcpanesSyntheticCanaryInput),
+    PaneForgePreflight(PaneForgePreflightInput),
+    PaneForgeSyntheticCanary(PaneForgeSyntheticCanaryInput),
     Command(Box<CoordinationCommand>),
     Query(Box<CoordinationQuery>),
 }

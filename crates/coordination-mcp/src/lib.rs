@@ -15,4 +15,4 @@ pub use server::*;
 pub use stdio::*;
 
 pub const COORDINATION_MCP_CONTRACT_VERSION: &str = "coordination-mcp/v1beta1";
-pub const MCP_SERVER_NAME: &str = "codex-ccpanes-mcp";
+pub const MCP_SERVER_NAME: &str = "codex-paneforge-mcp";

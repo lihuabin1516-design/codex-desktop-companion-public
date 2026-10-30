@@ -15,13 +15,13 @@
 - 已知影响范围。
 
 报告中使用合成 Token、合成路径和合成项目，避免附带真实凭据、项目数据或
-CC-Panes 数据库。
+PaneForge 数据库。
 
 ## 重点威胁边界
 
-- Codex Desktop 私有环境变量向 CC-Panes 后代进程泄漏；
+- Codex Desktop 私有环境变量向 PaneForge 后代进程泄漏；
 - 安装清单路径逃逸或包文件未纳入哈希覆盖；
 - 日志、doctor 或 probe 输出敏感值；
-- Companion 覆盖官方 CC-Panes 文件；
+- Companion 覆盖官方 PaneForge 文件；
 - 卸载器删除未登记目录；
 - 发布包缺少有效 Authenticode 签名。

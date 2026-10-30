@@ -3,7 +3,7 @@
 Contract markers:
 
 - contract: external-windows-acceptance/v1
-- product: CodexCCPanesCompanion
+- product: CodexPaneForgeCompanion
 - targetVersion: 0.2.0-beta.1
 - acceptanceRunner: Test-ExternalWindowsAcceptance.ps1
 - defaultRegisterUserMcp: false
@@ -11,7 +11,7 @@ Contract markers:
 - configScope: synthetic
 - realDispatchEnabled: false
 - modifiesOfficialCodex: false
-- modifiesOfficialCcPanes: false
+- modifiesOfficialPaneForge: false
 
 本文件定义 Phase 8 package 在另一台 Windows x64 机器上的验收步骤。它是验收合同，
 不是本仓库当前执行过的验收报告；每台外部机器必须记录实际命令、exit code 和关键输出。
@@ -21,12 +21,12 @@ Contract markers:
 - 只验证 release package、安装脚本、三组件 inventory、合成 Codex MCP 配置事务和
   Coordinator lifecycle entry。
 - 默认安装不得注册用户 Codex MCP，不得启动后台 Coordinator，不得修改官方 Codex、
-  官方 CC-Panes、`~/.codex`、`~/.cc-panes` 或真实项目。
+  官方 PaneForge、`~/.codex`、`~/.paneforge` 或真实项目。
 - Codex config 验收必须使用临时合成 `config.toml`。真实用户 config 只可在后续明确门禁中
   使用。
-- 真实 CC-Panes/Codex 探测只能作为只读 probe/doctor 记录；缺少官方安装时，本合同中真实
+- 真实 PaneForge/Codex 探测只能作为只读 probe/doctor 记录；缺少官方安装时，本合同中真实
   probe 记为 `not-run`，不使 Phase 8 package 验收失败。
-- 任何真实 Worker 派发、真实 Session 控制、真实 CC-Panes process restart、后台守护注册、
+- 任何真实 Worker 派发、真实 Session 控制、真实 PaneForge process restart、后台守护注册、
   Windows service、scheduled task 或自启动项均不属于本合同。
 
 ## 机器与输入
@@ -47,8 +47,8 @@ signatureStatus: <per EXE Authenticode status>
 验收使用解压后的 package root，示例：
 
 ```powershell
-$PackageRoot = "C:\Temp\CodexCCPanes-<VERSION>-win-x64"
-$AcceptanceRoot = Join-Path $env:TEMP ("codex-ccpanes-external-acceptance-" + [guid]::NewGuid().ToString("N"))
+$PackageRoot = "C:\Temp\CodexPaneForge-<VERSION>-win-x64"
+$AcceptanceRoot = Join-Path $env:TEMP ("codex-paneforge-external-acceptance-" + [guid]::NewGuid().ToString("N"))
 $InstallRoot = Join-Path $AcceptanceRoot "install"
 $SyntheticCodexConfig = Join-Path $AcceptanceRoot "codex-home\config.toml"
 ```
@@ -63,7 +63,7 @@ Codex MCP config transaction 和卸载检查：
 powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\Test-ExternalWindowsAcceptance.ps1 -Json
 ```
 
-该 runner 只使用 `%TEMP%\codex-ccpanes-external-acceptance-*` 下的临时 install root 和
+该 runner 只使用 `%TEMP%\codex-paneforge-external-acceptance-*` 下的临时 install root 和
 synthetic Codex config；它不读取或修改真实 `~/.codex/config.toml`，不注册真实 MCP，不启动
 后台 Coordinator，不执行真实 Worker 派发。runner 会记录启动前已存在的 Companion
 MCP/Coordinator 进程基线，并只把本轮新增同名进程残留判为失败。runner 通过后，仍需把机器事实、
@@ -76,8 +76,8 @@ MCP/Coordinator 进程基线，并只把本轮新增同名进程残留判为失�
 ```powershell
 Set-Location $PackageRoot
 Get-Content .\VERSION
-Get-FileHash .\CodexCCPanes.exe, .\codex-ccpanes.exe, .\codex-ccpanes-coordinator.exe, .\codex-ccpanes-mcp.exe -Algorithm SHA256
-Get-AuthenticodeSignature .\CodexCCPanes.exe, .\codex-ccpanes.exe, .\codex-ccpanes-coordinator.exe, .\codex-ccpanes-mcp.exe |
+Get-FileHash .\CodexPaneForge.exe, .\codex-paneforge.exe, .\codex-paneforge-coordinator.exe, .\codex-paneforge-mcp.exe -Algorithm SHA256
+Get-AuthenticodeSignature .\CodexPaneForge.exe, .\codex-paneforge.exe, .\codex-paneforge-coordinator.exe, .\codex-paneforge-mcp.exe |
   Select-Object Path, Status, StatusMessage
 ```
 
@@ -92,7 +92,7 @@ powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File <repo>\scripts\verif
 ### 2. 隔离 clean install
 
 ```powershell
-powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\Install-CodexCCPanes.ps1 `
+powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\Install-CodexPaneForge.ps1 `
   -InstallRoot $InstallRoot `
   -SkipShortcuts `
   -SkipRegistry `
@@ -103,8 +103,8 @@ powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\Install-CodexCCPan
 
 - exit code = 0；
 - `$InstallRoot\install-state.json` 与 `$InstallRoot\current.json` 存在；
-- `current.json` 登记 `CodexCCPanes.exe`、`codex-ccpanes.exe`、
-  `codex-ccpanes-coordinator.exe`、`codex-ccpanes-mcp.exe` 和
+- `current.json` 登记 `CodexPaneForge.exe`、`codex-paneforge.exe`、
+  `codex-paneforge-coordinator.exe`、`codex-paneforge-mcp.exe` 和
   `Manage-Coordinator.ps1`；
 - 默认安装未修改真实 Codex config，未启动后台 Coordinator。
 
@@ -186,7 +186,7 @@ if ($After -ne $Before) { throw "synthetic Codex config rollback hash mismatch" 
 ### 5. Explicit uninstall
 
 ```powershell
-powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\Uninstall-CodexCCPanes.ps1 `
+powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\Uninstall-CodexPaneForge.ps1 `
   -InstallRoot $InstallRoot `
   -SkipShortcuts `
   -SkipRegistry `
@@ -194,7 +194,7 @@ powershell -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\Uninstall-CodexCCP
 ```
 
 期望：Companion 登记的 version directories、`current.json`、`install-state.json` 和
-root `Manage-Coordinator.ps1` 被移除；官方 Codex、官方 CC-Panes、真实用户 config 和真实
+root `Manage-Coordinator.ps1` 被移除；官方 Codex、官方 PaneForge、真实用户 config 和真实
 项目未被修改。
 
 ## 验收记录格式

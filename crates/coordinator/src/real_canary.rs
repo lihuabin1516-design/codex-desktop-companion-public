@@ -4,9 +4,9 @@ use std::path::PathBuf;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use ccpanes_adapter::{
+use paneforge_adapter::{
     dedicated_workspace_name_for_project_path, ensure_dedicated_workspace_project,
-    read_ccpanes_discovery_file, AdapterTimeouts, CcpanesAdapter, DedicatedWorkspaceReadiness,
+    read_paneforge_discovery_file, AdapterTimeouts, PaneForgeAdapter, DedicatedWorkspaceReadiness,
     DedicatedWorkspaceSpec,
 };
 use coordination_core::{
@@ -18,7 +18,7 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RealCcpanesCanaryArgs {
+pub struct RealPaneForgeCanaryArgs {
     pub discovery: PathBuf,
     pub state_dir: PathBuf,
     pub project_path: PathBuf,
@@ -31,12 +31,12 @@ pub struct RealCcpanesCanaryArgs {
     pub request_timeout: Duration,
 }
 
-pub const REAL_CCPANES_CANARY_RUNNER_CONTRACT_VERSION: &str =
-    "coordination.real-ccpanes-canary-runner/v1beta1";
+pub const REAL_PANEFORGE_CANARY_RUNNER_CONTRACT_VERSION: &str =
+    "coordination.real-paneforge-canary-runner/v1beta1";
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct RealCcpanesCanaryReport {
+pub struct RealPaneForgeCanaryReport {
     pub contract_version: String,
     pub workspace_gate_contract_version: String,
     pub workspace_gate_readiness: DedicatedWorkspaceReadiness,
@@ -47,12 +47,12 @@ pub struct RealCcpanesCanaryReport {
     pub repository_head_digest: String,
     pub state_store_digest: String,
     pub session_preserved: bool,
-    pub canary: crate::CcpanesCanaryReport,
+    pub canary: crate::PaneForgeCanaryReport,
 }
 
-pub fn parse_real_ccpanes_canary_args<I, S>(
+pub fn parse_real_paneforge_canary_args<I, S>(
     args: I,
-) -> Result<RealCcpanesCanaryArgs, CoordinationError>
+) -> Result<RealPaneForgeCanaryArgs, CoordinationError>
 where
     I: IntoIterator<Item = S>,
     S: Into<OsString>,
@@ -98,7 +98,7 @@ where
         }
     }
 
-    Ok(RealCcpanesCanaryArgs {
+    Ok(RealPaneForgeCanaryArgs {
         discovery: required_argument(discovery, "--discovery")?,
         state_dir: required_argument(state_dir, "--state-dir")?,
         project_path: required_argument(project_path, "--project-path")?,
@@ -112,9 +112,9 @@ where
     })
 }
 
-pub fn run_real_ccpanes_canary(
-    args: RealCcpanesCanaryArgs,
-) -> Result<RealCcpanesCanaryReport, CoordinationError> {
+pub fn run_real_paneforge_canary(
+    args: RealPaneForgeCanaryArgs,
+) -> Result<RealPaneForgeCanaryReport, CoordinationError> {
     let expected_response = canary_response_marker(&args.marker)?;
     prepare_fresh_state_dir(&args.state_dir)?;
     let project_path = args.project_path.to_string_lossy().into_owned();
@@ -134,8 +134,8 @@ pub fn run_real_ccpanes_canary(
     })?;
     crate::verify_synthetic_repository_marker(&args.project_path)?;
 
-    let endpoint = read_ccpanes_discovery_file(&args.discovery, 1)?;
-    let mut adapter = CcpanesAdapter::new(
+    let endpoint = read_paneforge_discovery_file(&args.discovery, 1)?;
+    let mut adapter = PaneForgeAdapter::new(
         endpoint,
         AdapterTimeouts::new(args.connect_timeout, args.request_timeout),
     )?;
@@ -172,7 +172,7 @@ pub fn run_real_ccpanes_canary(
     let mut runtime = crate::CoordinatorRuntime::open(
         &database_path,
         &args.state_dir,
-        "ccpanes-v0.12.3-real-canary",
+        "paneforge-v0.12.3-real-canary",
         crate::CoordinatorConfig::default(),
     )?;
     let request_digest = hex::encode(Sha256::digest(args.marker.as_bytes()));
@@ -183,7 +183,7 @@ pub fn run_real_ccpanes_canary(
         message: coordination_protocol::IpcMessage::command(CoordinationCommand::WorkerDispatch {
             idempotency_key: IdempotencyKey::try_new(
                 "worker_dispatch",
-                CallerId::try_new("real-ccpanes-canary")?,
+                CallerId::try_new("real-paneforge-canary")?,
                 request_id,
             )?,
             workflow_id: None,
@@ -195,7 +195,7 @@ pub fn run_real_ccpanes_canary(
             },
             objective: format!(
                 "只读兼容验收：保持项目文件原样，不改变当前工作目录。将下方 challenge 按 Unicode 字符逆序，\
-并报告当前工作目录。严格输出两行：第一行只写逆序结果；第二行格式为 CCPANES_CANARY_CWD=<当前工作目录完整路径>；不要复述原 challenge。\nchallenge:\n{}",
+并报告当前工作目录。严格输出两行：第一行只写逆序结果；第二行格式为 PANEFORGE_CANARY_CWD=<当前工作目录完整路径>；不要复述原 challenge。\nchallenge:\n{}",
                 args.marker
             ),
             access: AccessMode::Read,
@@ -217,10 +217,10 @@ pub fn run_real_ccpanes_canary(
 
     runtime.set_dispatch_ready(true);
     let canary = runtime
-        .run_next_ccpanes_canary(
+        .run_next_paneforge_canary(
             &mut adapter,
             &capability,
-            crate::CcpanesCanaryPolicy {
+            crate::PaneForgeCanaryPolicy {
                 expected_marker: expected_response,
                 timeout: args.timeout,
                 poll_interval: args.poll_interval,
@@ -234,8 +234,8 @@ pub fn run_real_ccpanes_canary(
             )
         })?;
 
-    Ok(RealCcpanesCanaryReport {
-        contract_version: REAL_CCPANES_CANARY_RUNNER_CONTRACT_VERSION.to_owned(),
+    Ok(RealPaneForgeCanaryReport {
+        contract_version: REAL_PANEFORGE_CANARY_RUNNER_CONTRACT_VERSION.to_owned(),
         workspace_gate_contract_version: workspace_gate.contract_version,
         workspace_gate_readiness: workspace_gate.readiness,
         workspace_setup_side_effects: workspace_gate.external_workspace_side_effects,

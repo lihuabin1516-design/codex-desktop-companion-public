@@ -1,12 +1,12 @@
 use std::time::Duration;
 
-use ccpanes_adapter::{
-    dedicated_workspace_name_for_project_path, AdapterTimeouts, CcpanesAdapter,
-    CcpanesEndpointConfig, FakeCcpanesBehavior, FakeCcpanesServer, TOOL_GET_SESSION_OUTPUT,
+use paneforge_adapter::{
+    dedicated_workspace_name_for_project_path, AdapterTimeouts, PaneForgeAdapter,
+    PaneForgeEndpointConfig, FakePaneForgeBehavior, FakePaneForgeServer, TOOL_GET_SESSION_OUTPUT,
     TOOL_GET_SESSION_STATUS, TOOL_LAUNCH_TASK,
 };
 use coordination_coordinator::{
-    prepare_synthetic_git_repository, CcpanesCanaryPolicy, CoordinatorConfig, CoordinatorRuntime,
+    prepare_synthetic_git_repository, PaneForgeCanaryPolicy, CoordinatorConfig, CoordinatorRuntime,
 };
 use coordination_core::{
     AccessMode, CallerId, CoordinationCommand, DirtyPolicy, ErrorCode, IdempotencyKey, OutboxState,
@@ -20,16 +20,16 @@ use tempfile::tempdir;
 fn coordinator_executes_one_adapter_launch_and_converges_canary_store_state() {
     let dir = tempdir().unwrap();
     let repository =
-        prepare_synthetic_git_repository(dir.path(), "codex-ccpanes-phase7-real-seam").unwrap();
+        prepare_synthetic_git_repository(dir.path(), "codex-paneforge-phase7-real-seam").unwrap();
     let expected_launch_workspace =
         dedicated_workspace_name_for_project_path(&repository.repository.path);
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
         AdapterTimeouts::default(),
     )
     .unwrap();
@@ -38,7 +38,7 @@ fn coordinator_executes_one_adapter_launch_and_converges_canary_store_state() {
     let mut runtime = CoordinatorRuntime::open(
         &database,
         dir.path(),
-        "ccpanes-real-seam-test",
+        "paneforge-real-seam-test",
         CoordinatorConfig::default(),
     )
     .unwrap();
@@ -57,9 +57,9 @@ fn coordinator_executes_one_adapter_launch_and_converges_canary_store_state() {
                 path: repository.repository.path.clone(),
                 expected_head: repository.repository.expected_head,
                 dirty_policy: DirtyPolicy::Reject,
-                workspace_name: Some("codex-ccpanes-phase7-real-seam".to_owned()),
+                workspace_name: Some("codex-paneforge-phase7-real-seam".to_owned()),
             },
-            objective: "print synthetic output and a CCPANES_CANARY_CWD line, then stop".to_owned(),
+            objective: "print synthetic output and a PANEFORGE_CANARY_CWD line, then stop".to_owned(),
             access: AccessMode::Read,
             executor: WorkerExecutor {
                 cli_tool: "codex".to_owned(),
@@ -79,10 +79,10 @@ fn coordinator_executes_one_adapter_launch_and_converges_canary_store_state() {
 
     runtime.set_dispatch_ready(true);
     let report = runtime
-        .run_next_ccpanes_canary(
+        .run_next_paneforge_canary(
             &mut adapter,
             &capability,
-            CcpanesCanaryPolicy {
+            PaneForgeCanaryPolicy {
                 expected_marker: "synthetic output".to_owned(),
                 timeout: Duration::from_secs(2),
                 poll_interval: Duration::from_millis(10),
@@ -150,15 +150,15 @@ fn coordinator_executes_one_adapter_launch_and_converges_canary_store_state() {
 fn coordinator_routes_source_workspace_to_project_dedicated_launch_workspace() {
     let dir = tempdir().unwrap();
     let repository =
-        prepare_synthetic_git_repository(dir.path(), "codex-ccpanes-source-workspace-route")
+        prepare_synthetic_git_repository(dir.path(), "codex-paneforge-source-workspace-route")
             .unwrap();
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
         AdapterTimeouts::default(),
     )
     .unwrap();
@@ -166,7 +166,7 @@ fn coordinator_routes_source_workspace_to_project_dedicated_launch_workspace() {
     let mut runtime = CoordinatorRuntime::open(
         dir.path().join("coordination.db"),
         dir.path(),
-        "ccpanes-source-workspace-route-test",
+        "paneforge-source-workspace-route-test",
         CoordinatorConfig::default(),
     )
     .unwrap();
@@ -190,7 +190,7 @@ fn coordinator_routes_source_workspace_to_project_dedicated_launch_workspace() {
                 dirty_policy: DirtyPolicy::Reject,
                 workspace_name: Some(source_workspace_name.to_owned()),
             },
-            objective: "print synthetic output and a CCPANES_CANARY_CWD line, then stop".to_owned(),
+            objective: "print synthetic output and a PANEFORGE_CANARY_CWD line, then stop".to_owned(),
             access: AccessMode::Read,
             executor: WorkerExecutor {
                 cli_tool: "codex".to_owned(),
@@ -202,10 +202,10 @@ fn coordinator_routes_source_workspace_to_project_dedicated_launch_workspace() {
 
     runtime.set_dispatch_ready(true);
     let report = runtime
-        .run_next_ccpanes_canary(
+        .run_next_paneforge_canary(
             &mut adapter,
             &capability,
-            CcpanesCanaryPolicy {
+            PaneForgeCanaryPolicy {
                 expected_marker: "synthetic output".to_owned(),
                 timeout: Duration::from_secs(2),
                 poll_interval: Duration::from_millis(10),
@@ -231,14 +231,14 @@ fn coordinator_routes_source_workspace_to_project_dedicated_launch_workspace() {
 fn coordinator_canary_fails_closed_when_cwd_marker_is_missing() {
     let dir = tempdir().unwrap();
     let repository =
-        prepare_synthetic_git_repository(dir.path(), "codex-ccpanes-cwd-missing").unwrap();
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+        prepare_synthetic_git_repository(dir.path(), "codex-paneforge-cwd-missing").unwrap();
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
         AdapterTimeouts::default(),
     )
     .unwrap();
@@ -246,7 +246,7 @@ fn coordinator_canary_fails_closed_when_cwd_marker_is_missing() {
     let mut runtime = CoordinatorRuntime::open(
         dir.path().join("coordination.db"),
         dir.path(),
-        "ccpanes-cwd-missing-test",
+        "paneforge-cwd-missing-test",
         CoordinatorConfig::default(),
     )
     .unwrap();
@@ -287,10 +287,10 @@ fn coordinator_canary_fails_closed_when_cwd_marker_is_missing() {
 
     runtime.set_dispatch_ready(true);
     let error = runtime
-        .run_next_ccpanes_canary(
+        .run_next_paneforge_canary(
             &mut adapter,
             &capability,
-            CcpanesCanaryPolicy {
+            PaneForgeCanaryPolicy {
                 expected_marker: "synthetic output".to_owned(),
                 timeout: Duration::from_secs(2),
                 poll_interval: Duration::from_millis(10),
@@ -318,15 +318,15 @@ fn coordinator_canary_fails_closed_when_cwd_marker_is_missing() {
 fn coordinator_canary_reopen_recovers_dropped_launch_response_as_result_unknown() {
     let dir = tempdir().unwrap();
     let repository =
-        prepare_synthetic_git_repository(dir.path(), "codex-ccpanes-real-seam-unknown").unwrap();
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+        prepare_synthetic_git_repository(dir.path(), "codex-paneforge-real-seam-unknown").unwrap();
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         drop_launch_response_after_side_effect: true,
         complete_launches: true,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
         AdapterTimeouts::new(Duration::from_millis(100), Duration::from_millis(150)),
     )
     .unwrap();
@@ -335,7 +335,7 @@ fn coordinator_canary_reopen_recovers_dropped_launch_response_as_result_unknown(
     let mut runtime = CoordinatorRuntime::open(
         &database,
         dir.path(),
-        "ccpanes-real-seam-unknown-test",
+        "paneforge-real-seam-unknown-test",
         CoordinatorConfig::default(),
     )
     .unwrap();
@@ -354,7 +354,7 @@ fn coordinator_canary_reopen_recovers_dropped_launch_response_as_result_unknown(
                 path: repository.repository.path,
                 expected_head: repository.repository.expected_head,
                 dirty_policy: DirtyPolicy::Reject,
-                workspace_name: Some("codex-ccpanes-real-seam-unknown".to_owned()),
+                workspace_name: Some("codex-paneforge-real-seam-unknown".to_owned()),
             },
             objective: "print synthetic output and stop".to_owned(),
             access: AccessMode::Read,
@@ -381,10 +381,10 @@ fn coordinator_canary_reopen_recovers_dropped_launch_response_as_result_unknown(
         .unwrap()
         .binding_id;
     let error = runtime
-        .run_next_ccpanes_canary(
+        .run_next_paneforge_canary(
             &mut adapter,
             &capability,
-            CcpanesCanaryPolicy {
+            PaneForgeCanaryPolicy {
                 expected_marker: "synthetic output".to_owned(),
                 timeout: Duration::from_secs(2),
                 poll_interval: Duration::from_millis(10),
@@ -410,7 +410,7 @@ fn coordinator_canary_reopen_recovers_dropped_launch_response_as_result_unknown(
     let mut reopened = CoordinatorRuntime::open(
         &database,
         dir.path(),
-        "ccpanes-real-seam-unknown-test",
+        "paneforge-real-seam-unknown-test",
         CoordinatorConfig::default(),
     )
     .unwrap();

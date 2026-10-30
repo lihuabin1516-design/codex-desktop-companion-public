@@ -10,8 +10,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$ProductId = "CodexCCPanesCompanion"
-$AcceptancePrefix = "codex-ccpanes-external-acceptance-"
+$ProductId = "CodexPaneForgeCompanion"
+$AcceptancePrefix = "codex-paneforge-external-acceptance-"
 
 if ([string]::IsNullOrWhiteSpace($PackageRoot)) {
     if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
@@ -28,7 +28,7 @@ if ([string]::IsNullOrWhiteSpace($PackageRoot)) {
 function Write-Step {
     param([string]$Message)
     if (-not $Quiet -and -not $Json) {
-        Write-Host "[Codex + CC-Panes] $Message"
+        Write-Host "[Codex + PaneForge] $Message"
     }
 }
 
@@ -109,7 +109,7 @@ function Get-FileSnapshot {
 
 function Get-CompanionBackgroundProcesses {
     return @(Get-Process -ErrorAction SilentlyContinue |
-        Where-Object { $_.ProcessName -in @("codex-ccpanes-coordinator", "codex-ccpanes-mcp") } |
+        Where-Object { $_.ProcessName -in @("codex-paneforge-coordinator", "codex-paneforge-mcp") } |
         ForEach-Object {
             [ordered]@{
                 processName = [string]$_.ProcessName
@@ -201,12 +201,12 @@ try {
         "EXTERNAL_WINDOWS_ACCEPTANCE.md",
         "RELEASE_NOTES_0.2.0-beta.1.md",
         "Test-ExternalWindowsAcceptance.ps1",
-        "Install-CodexCCPanes.ps1",
-        "Uninstall-CodexCCPanes.ps1",
-        "codex-ccpanes.exe",
-        "CodexCCPanes.exe",
-        "codex-ccpanes-coordinator.exe",
-        "codex-ccpanes-mcp.exe"
+        "Install-CodexPaneForge.ps1",
+        "Uninstall-CodexPaneForge.ps1",
+        "codex-paneforge.exe",
+        "CodexPaneForge.exe",
+        "codex-paneforge-coordinator.exe",
+        "codex-paneforge-mcp.exe"
     )) {
         if (-not (Test-Path -LiteralPath (Join-Path $PackageRoot $required) -PathType Leaf)) {
             throw "Required package file missing: $required"
@@ -228,10 +228,10 @@ try {
 
     $signatureStates = @()
     foreach ($binary in @(
-        "CodexCCPanes.exe",
-        "codex-ccpanes.exe",
-        "codex-ccpanes-coordinator.exe",
-        "codex-ccpanes-mcp.exe"
+        "CodexPaneForge.exe",
+        "codex-paneforge.exe",
+        "codex-paneforge-coordinator.exe",
+        "codex-paneforge-mcp.exe"
     )) {
         $signature = Get-AuthenticodeSignature -LiteralPath (Join-Path $PackageRoot $binary)
         $signatureStates += "$binary=$($signature.Status)"
@@ -239,7 +239,7 @@ try {
 
     Write-Step "Installing into isolated root"
     New-Item -ItemType Directory -Force -Path $AcceptanceRoot | Out-Null
-    Invoke-WindowsPowerShell -ScriptPath (Join-Path $PackageRoot "Install-CodexCCPanes.ps1") `
+    Invoke-WindowsPowerShell -ScriptPath (Join-Path $PackageRoot "Install-CodexPaneForge.ps1") `
         -Arguments @("-InstallRoot", $InstallRoot, "-SkipShortcuts", "-SkipRegistry", "-Quiet") | Out-Null
     $statePath = Join-Path $InstallRoot "install-state.json"
     $currentPath = Join-Path $InstallRoot "current.json"
@@ -302,7 +302,7 @@ try {
         -Arguments @("-Action", "Repair", "-ConfigPath", $SyntheticCodexConfig, "-InstallRoot", $InstallRoot,
             "-McpExecutable", ([string]$state.mcpExecutable), "-Json", "-Quiet")) | Out-Null
     $managedMatches = Select-String -LiteralPath $SyntheticCodexConfig `
-        -Pattern "# BEGIN CodexCCPanesCompanion MCP codex_ccpanes" | Measure-Object
+        -Pattern "# BEGIN CodexPaneForgeCompanion MCP codex_paneforge" | Measure-Object
     if ($managedMatches.Count -ne 1) {
         throw "Synthetic Codex MCP repair duplicated the managed block."
     }
@@ -327,7 +327,7 @@ try {
     }
 
     Write-Step "Uninstalling isolated root"
-    Invoke-WindowsPowerShell -ScriptPath (Join-Path $PackageRoot "Uninstall-CodexCCPanes.ps1") `
+    Invoke-WindowsPowerShell -ScriptPath (Join-Path $PackageRoot "Uninstall-CodexPaneForge.ps1") `
         -Arguments @("-InstallRoot", $InstallRoot, "-SkipShortcuts", "-SkipRegistry", "-Quiet") | Out-Null
     if ((Test-Path -LiteralPath $statePath -PathType Leaf) -or
         (Test-Path -LiteralPath (Join-Path $InstallRoot "Manage-Coordinator.ps1") -PathType Leaf)) {

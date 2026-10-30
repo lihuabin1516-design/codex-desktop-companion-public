@@ -1,4 +1,4 @@
-name: Codex CC-Panes Companion
+name: Codex PaneForge Companion
 
 on:
   push:
@@ -25,8 +25,8 @@ jobs:
 
       - name: Configure external build paths
         run: |
-          $env:CARGO_TARGET_DIR = Join-Path $env:RUNNER_TEMP "codex-ccpanes-target"
-          $env:RELEASE_OUTPUT_ROOT = Join-Path $env:RUNNER_TEMP "codex-ccpanes-release"
+          $env:CARGO_TARGET_DIR = Join-Path $env:RUNNER_TEMP "codex-paneforge-target"
+          $env:RELEASE_OUTPUT_ROOT = Join-Path $env:RUNNER_TEMP "codex-paneforge-release"
           "CARGO_TARGET_DIR=$env:CARGO_TARGET_DIR" >> $env:GITHUB_ENV
           "RELEASE_OUTPUT_ROOT=$env:RELEASE_OUTPUT_ROOT" >> $env:GITHUB_ENV
 
@@ -47,7 +47,7 @@ jobs:
 
       - name: Verify package
         run: |
-          $package = Get-ChildItem $env:RELEASE_OUTPUT_ROOT -Directory -Filter "CodexCCPanes-*-win-x64" |
+          $package = Get-ChildItem $env:RELEASE_OUTPUT_ROOT -Directory -Filter "CodexPaneForge-*-win-x64" |
             Select-Object -First 1
           .\scripts\verify-package.ps1 -PackageRoot $package.FullName
           .\scripts\test-installer.ps1 -PackageRoot $package.FullName

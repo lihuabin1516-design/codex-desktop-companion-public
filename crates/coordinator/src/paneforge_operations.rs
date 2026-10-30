@@ -2,25 +2,25 @@ use std::env;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use ccpanes_adapter::{
-    read_ccpanes_discovery_file, require_dispatch_requalification, run_read_only_preflight,
-    AdapterReadiness, AdapterTimeouts, CcpanesAdapter,
+use paneforge_adapter::{
+    read_paneforge_discovery_file, require_dispatch_requalification, run_read_only_preflight,
+    AdapterReadiness, AdapterTimeouts, PaneForgeAdapter,
 };
 use coordination_core::{CoordinationError, ErrorCode};
-use coordination_protocol::{CcpanesPreflightInput, CcpanesSyntheticCanaryInput};
+use coordination_protocol::{PaneForgePreflightInput, PaneForgeSyntheticCanaryInput};
 use serde::Serialize;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-use crate::{run_real_ccpanes_canary, RealCcpanesCanaryArgs};
+use crate::{run_real_paneforge_canary, RealPaneForgeCanaryArgs};
 
-const DISCOVERY_ENV: &str = "CODEX_CCPANES_DISCOVERY_FILE";
+const DISCOVERY_ENV: &str = "CODEX_PANEFORGE_DISCOVERY_FILE";
 
-pub fn run_ccpanes_preflight(input: CcpanesPreflightInput) -> Result<Value, CoordinationError> {
+pub fn run_paneforge_preflight(input: PaneForgePreflightInput) -> Result<Value, CoordinationError> {
     input.validate_contract()?;
     let discovery = resolve_discovery_path(input.discovery_path.as_deref())?;
-    let endpoint = read_ccpanes_discovery_file(discovery, input.discovery_generation)?;
-    let mut adapter = CcpanesAdapter::new(
+    let endpoint = read_paneforge_discovery_file(discovery, input.discovery_generation)?;
+    let mut adapter = PaneForgeAdapter::new(
         endpoint,
         AdapterTimeouts::new(
             Duration::from_millis(input.connect_timeout_ms),
@@ -41,8 +41,8 @@ pub fn run_ccpanes_preflight(input: CcpanesPreflightInput) -> Result<Value, Coor
     serialize_operation_report(report)
 }
 
-pub fn run_ccpanes_synthetic_canary(
-    input: CcpanesSyntheticCanaryInput,
+pub fn run_paneforge_synthetic_canary(
+    input: PaneForgeSyntheticCanaryInput,
     coordination_data_dir: &Path,
 ) -> Result<Value, CoordinationError> {
     input.validate_contract()?;
@@ -52,7 +52,7 @@ pub fn run_ccpanes_synthetic_canary(
         .join(hex::encode(Sha256::digest(
             input.request_id.as_str().as_bytes(),
         )));
-    let report = run_real_ccpanes_canary(RealCcpanesCanaryArgs {
+    let report = run_real_paneforge_canary(RealPaneForgeCanaryArgs {
         discovery,
         state_dir,
         project_path: PathBuf::from(input.project_path),
@@ -84,7 +84,7 @@ fn serialize_operation_report(report: impl Serialize) -> Result<Value, Coordinat
     serde_json::to_value(report).map_err(|error| {
         CoordinationError::new(
             ErrorCode::InternalInvariantViolation,
-            format!("serialize CC-Panes operation report failed: {error}"),
+            format!("serialize PaneForge operation report failed: {error}"),
         )
     })
 }

@@ -3,11 +3,11 @@ use std::collections::BTreeSet;
 use std::io::Cursor;
 use std::rc::Rc;
 
-use ccpanes_adapter::{
+use paneforge_adapter::{
     dedicated_workspace_name_for_project_path, run_dedicated_workspace_project_gate,
-    run_read_only_preflight, AdapterReadiness, AdapterTimeouts, CcpanesAdapter,
-    CcpanesEndpointConfig, DedicatedWorkspaceReadiness, DedicatedWorkspaceSpec,
-    FakeCcpanesBehavior, FakeCcpanesServer, FakeSessionSeed, TOOL_ADD_PROJECT_TO_WORKSPACE,
+    run_read_only_preflight, AdapterReadiness, AdapterTimeouts, PaneForgeAdapter,
+    PaneForgeEndpointConfig, DedicatedWorkspaceReadiness, DedicatedWorkspaceSpec,
+    FakePaneForgeBehavior, FakePaneForgeServer, FakeSessionSeed, TOOL_ADD_PROJECT_TO_WORKSPACE,
     TOOL_CREATE_WORKSPACE, TOOL_GET_SESSION_OUTPUT, TOOL_GET_SESSION_STATUS, TOOL_KILL_SESSION,
     TOOL_LAUNCH_TASK, TOOL_LIST_PANES, TOOL_LIST_SESSIONS, TOOL_SUBMIT_TO_SESSION,
 };
@@ -21,8 +21,8 @@ use coordination_core::{
 };
 use coordination_mcp::{default_caller_id, serve, CoordinatorIpcClient, JsonRpcRequest, McpServer};
 use coordination_protocol::{
-    CcpanesPreflightInput, CcpanesSyntheticCanaryInput, IpcEnvelope, IpcMessage, IpcResponse,
-    CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION, CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
+    PaneForgePreflightInput, PaneForgeSyntheticCanaryInput, IpcEnvelope, IpcMessage, IpcResponse,
+    PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION, PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
     RESULT_QUERY_SCHEMA_VERSION, STATUS_QUERY_SCHEMA_VERSION, WORKER_CANCEL_SCHEMA_VERSION,
     WORKER_DISPATCH_SCHEMA_VERSION, WORKFLOW_CANCEL_SCHEMA_VERSION, WORKFLOW_CREATE_SCHEMA_VERSION,
     WORKFLOW_START_SCHEMA_VERSION,
@@ -441,7 +441,7 @@ fn stdio_initialize_tools_list_and_tools_call_round_trip() {
     assert_eq!(responses.len(), 3);
     assert_eq!(
         responses[0]["result"]["serverInfo"]["name"],
-        "codex-ccpanes-mcp"
+        "codex-paneforge-mcp"
     );
     let tool_names = responses[1]["result"]["tools"]
         .as_array()
@@ -451,16 +451,16 @@ fn stdio_initialize_tools_list_and_tools_call_round_trip() {
         .collect::<Vec<_>>();
     assert!(tool_names.contains(&"worker_dispatch"));
     assert!(tool_names.contains(&"workflow_result"));
-    assert!(tool_names.contains(&"ccpanes_preflight"));
-    assert!(tool_names.contains(&"ccpanes_synthetic_canary"));
+    assert!(tool_names.contains(&"paneforge_preflight"));
+    assert!(tool_names.contains(&"paneforge_synthetic_canary"));
     let tools = responses[1]["result"]["tools"].as_array().unwrap();
     let preflight = tools
         .iter()
-        .find(|tool| tool["name"] == "ccpanes_preflight")
+        .find(|tool| tool["name"] == "paneforge_preflight")
         .unwrap();
     let canary = tools
         .iter()
-        .find(|tool| tool["name"] == "ccpanes_synthetic_canary")
+        .find(|tool| tool["name"] == "paneforge_synthetic_canary")
         .unwrap();
     assert_eq!(preflight["annotations"]["readOnlyHint"], true);
     assert_eq!(canary["annotations"]["readOnlyHint"], false);
@@ -471,7 +471,7 @@ fn stdio_initialize_tools_list_and_tools_call_round_trip() {
 }
 
 #[test]
-fn ccpanes_tools_route_exact_inputs_over_ipc_and_preserve_structured_response() {
+fn paneforge_tools_route_exact_inputs_over_ipc_and_preserve_structured_response() {
     let structured = json!({
         "contractVersion": "fixture-response/v1",
         "status": {"ready": true}
@@ -481,9 +481,9 @@ fn ccpanes_tools_route_exact_inputs_over_ipc_and_preserve_structured_response() 
     let preflight_result = call_tool(
         &mut server,
         "preflight",
-        "ccpanes_preflight",
+        "paneforge_preflight",
         json!({
-            "schemaVersion": CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION,
+            "schemaVersion": PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION,
             "discoveryPath": "C:/fixture/mcp-orchestrator.json",
             "discoveryGeneration": 7,
             "connectTimeoutMs": 2000,
@@ -495,15 +495,15 @@ fn ccpanes_tools_route_exact_inputs_over_ipc_and_preserve_structured_response() 
     let canary_result = call_tool(
         &mut server,
         "canary",
-        "ccpanes_synthetic_canary",
+        "paneforge_synthetic_canary",
         json!({
-            "schemaVersion": CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
+            "schemaVersion": PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
             "requestId": "global-canary-1",
             "discoveryPath": "C:/fixture/mcp-orchestrator.json",
             "projectPath": "C:/fixture/project",
-            "workspaceName": "codex-ccpanes-phase7-v0123",
+            "workspaceName": "codex-paneforge-phase7-v0123",
             "projectName": "compat-fixture",
-            "marker": "CODEX_CCPANES_GLOBAL_CANARY",
+            "marker": "CODEX_PANEFORGE_GLOBAL_CANARY",
             "timeoutMs": 420000,
             "pollIntervalMs": 750,
             "connectTimeoutMs": 2000,
@@ -514,11 +514,11 @@ fn ccpanes_tools_route_exact_inputs_over_ipc_and_preserve_structured_response() 
 
     let envelopes = envelopes.borrow();
     assert_eq!(envelopes.len(), 2);
-    assert_eq!(envelopes[0].request_id.as_str(), "ccpanes-preflight-1");
+    assert_eq!(envelopes[0].request_id.as_str(), "paneforge-preflight-1");
     assert_eq!(
         envelopes[0].message,
-        IpcMessage::CcpanesPreflight(CcpanesPreflightInput {
-            schema_version: CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION.to_owned(),
+        IpcMessage::PaneForgePreflight(PaneForgePreflightInput {
+            schema_version: PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION.to_owned(),
             discovery_path: Some("C:/fixture/mcp-orchestrator.json".to_owned()),
             discovery_generation: 7,
             connect_timeout_ms: 2_000,
@@ -528,14 +528,14 @@ fn ccpanes_tools_route_exact_inputs_over_ipc_and_preserve_structured_response() 
     assert_eq!(envelopes[1].request_id.as_str(), "global-canary-1");
     assert_eq!(
         envelopes[1].message,
-        IpcMessage::CcpanesSyntheticCanary(CcpanesSyntheticCanaryInput {
-            schema_version: CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION.to_owned(),
+        IpcMessage::PaneForgeSyntheticCanary(PaneForgeSyntheticCanaryInput {
+            schema_version: PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION.to_owned(),
             request_id: coordination_core::RequestId::try_new("global-canary-1").unwrap(),
             discovery_path: Some("C:/fixture/mcp-orchestrator.json".to_owned()),
             project_path: "C:/fixture/project".to_owned(),
-            workspace_name: "codex-ccpanes-phase7-v0123".to_owned(),
+            workspace_name: "codex-paneforge-phase7-v0123".to_owned(),
             project_name: "compat-fixture".to_owned(),
-            marker: "CODEX_CCPANES_GLOBAL_CANARY".to_owned(),
+            marker: "CODEX_PANEFORGE_GLOBAL_CANARY".to_owned(),
             timeout_ms: 420_000,
             poll_interval_ms: 750,
             connect_timeout_ms: 2_000,
@@ -731,7 +731,7 @@ fn unknown_tool_input_schema_version_returns_public_error() {
 }
 
 #[test]
-fn fake_ccpanes_complete_process_e2e_returns_aggregated_result() {
+fn fake_paneforge_complete_process_e2e_returns_aggregated_result() {
     let (_dir, runtime) = runtime_fixture();
     let mut server = server(runtime.clone());
     let accepted = call_tool(
@@ -743,13 +743,13 @@ fn fake_ccpanes_complete_process_e2e_returns_aggregated_result() {
     let worker_id = WorkerId::try_new(accepted["workerId"].as_str().unwrap()).unwrap();
     let workflow_id = WorkflowId::try_new(accepted["workflowId"].as_str().unwrap()).unwrap();
 
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
         AdapterTimeouts::default(),
     )
     .unwrap();
@@ -854,11 +854,11 @@ fn fake_ccpanes_complete_process_e2e_returns_aggregated_result() {
 fn phase7_single_worker_success_canary_uses_dedicated_repo_workspace_and_records_result() {
     let (dir, runtime) = runtime_fixture();
     let repository_registration =
-        prepare_synthetic_git_repository(dir.path(), "codex-ccpanes-phase7-success").unwrap();
+        prepare_synthetic_git_repository(dir.path(), "codex-paneforge-phase7-success").unwrap();
     let workspace_name =
         dedicated_workspace_name_for_project_path(&repository_registration.repository.path);
     let project_name = "phase7-success-project";
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
         workspaces: vec![json!({"id": "workspace-secret-id", "name": workspace_name})],
         projects: vec![json!({
@@ -867,11 +867,11 @@ fn phase7_single_worker_success_canary_uses_dedicated_repo_workspace_and_records
             "path": repository_registration.repository.path.clone(),
             "workspaceName": workspace_name
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
         AdapterTimeouts::default(),
     )
     .unwrap();
@@ -1065,11 +1065,11 @@ fn phase7_single_worker_success_canary_uses_dedicated_repo_workspace_and_records
 fn phase7_cancellation_canary_uses_dedicated_repo_workspace_and_kills_session_once() {
     let (dir, runtime) = runtime_fixture();
     let repository_registration =
-        prepare_synthetic_git_repository(dir.path(), "codex-ccpanes-phase7-cancel").unwrap();
+        prepare_synthetic_git_repository(dir.path(), "codex-paneforge-phase7-cancel").unwrap();
     let workspace_name =
         dedicated_workspace_name_for_project_path(&repository_registration.repository.path);
     let project_name = "phase7-cancel-project";
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         workspaces: vec![json!({"id": "workspace-secret-id", "name": workspace_name})],
         projects: vec![json!({
             "id": "project-secret-id",
@@ -1077,11 +1077,11 @@ fn phase7_cancellation_canary_uses_dedicated_repo_workspace_and_kills_session_on
             "path": repository_registration.repository.path.clone(),
             "workspaceName": workspace_name
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
         AdapterTimeouts::default(),
     )
     .unwrap();
@@ -1376,11 +1376,11 @@ fn phase7_coordinator_restart_canary_reopens_store_and_finishes_fake_worker_once
         .unwrap(),
     ));
     let repository_registration =
-        prepare_synthetic_git_repository(dir.path(), "codex-ccpanes-phase7-restart").unwrap();
+        prepare_synthetic_git_repository(dir.path(), "codex-paneforge-phase7-restart").unwrap();
     let workspace_name =
         dedicated_workspace_name_for_project_path(&repository_registration.repository.path);
     let project_name = "phase7-restart-project";
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
         workspaces: vec![json!({"id": "workspace-secret-id", "name": workspace_name})],
         projects: vec![json!({
@@ -1389,11 +1389,11 @@ fn phase7_coordinator_restart_canary_reopens_store_and_finishes_fake_worker_once
             "path": repository_registration.repository.path.clone(),
             "workspaceName": workspace_name
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
         AdapterTimeouts::default(),
     )
     .unwrap();
@@ -1604,11 +1604,11 @@ fn phase7_unknown_dispatch_canary_reconciles_dropped_launch_response_once() {
         .unwrap(),
     ));
     let repository_registration =
-        prepare_synthetic_git_repository(dir.path(), "codex-ccpanes-phase7-unknown").unwrap();
+        prepare_synthetic_git_repository(dir.path(), "codex-paneforge-phase7-unknown").unwrap();
     let workspace_name =
         dedicated_workspace_name_for_project_path(&repository_registration.repository.path);
     let project_name = "phase7-unknown-project";
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         drop_launch_response_after_side_effect: true,
         complete_launches: true,
         workspaces: vec![json!({"id": "workspace-secret-id", "name": workspace_name})],
@@ -1618,11 +1618,11 @@ fn phase7_unknown_dispatch_canary_reconciles_dropped_launch_response_once() {
             "path": repository_registration.repository.path.clone(),
             "workspaceName": workspace_name
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
         AdapterTimeouts::new(
             std::time::Duration::from_millis(100),
             std::time::Duration::from_millis(150),
@@ -1872,25 +1872,25 @@ fn phase7_unknown_dispatch_canary_reconciles_dropped_launch_response_once() {
 }
 
 #[test]
-fn phase7_ccpanes_process_restart_canary_recovers_fake_endpoint_without_duplicate_launch() {
+fn phase7_paneforge_process_restart_canary_recovers_fake_endpoint_without_duplicate_launch() {
     let dir = tempdir().unwrap();
     let database_path = dir.path().join("coordination.db");
     let runtime = Rc::new(RefCell::new(
         CoordinatorRuntime::open(
             &database_path,
             dir.path(),
-            "phase7-ccpanes-process-restart-ipc",
+            "phase7-paneforge-process-restart-ipc",
             CoordinatorConfig::default(),
         )
         .unwrap(),
     ));
     let repository_registration =
-        prepare_synthetic_git_repository(dir.path(), "codex-ccpanes-phase7-process-restart")
+        prepare_synthetic_git_repository(dir.path(), "codex-paneforge-phase7-process-restart")
             .unwrap();
     let workspace_name =
         dedicated_workspace_name_for_project_path(&repository_registration.repository.path);
     let project_name = "phase7-process-restart-project";
-    let fake_a = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake_a = FakePaneForgeServer::start(FakePaneForgeBehavior {
         workspaces: vec![json!({"id": "workspace-secret-id-a", "name": workspace_name})],
         projects: vec![json!({
             "id": "project-secret-id-a",
@@ -1898,7 +1898,7 @@ fn phase7_ccpanes_process_restart_canary_recovers_fake_endpoint_without_duplicat
             "path": repository_registration.repository.path.clone(),
             "workspaceName": workspace_name
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
     let old_endpoint = fake_a.endpoint().to_owned();
@@ -1906,8 +1906,8 @@ fn phase7_ccpanes_process_restart_canary_recovers_fake_endpoint_without_duplicat
         std::time::Duration::from_millis(100),
         std::time::Duration::from_millis(150),
     );
-    let mut adapter_a = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake_a.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter_a = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake_a.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts,
     )
     .unwrap();
@@ -2053,7 +2053,7 @@ fn phase7_ccpanes_process_restart_canary_recovers_fake_endpoint_without_duplicat
         assert_eq!(frozen_plan.dispatches.len(), 0);
     }
 
-    let fake_b = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake_b = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
         workspaces: vec![json!({"id": "workspace-secret-id-b", "name": workspace_name})],
         projects: vec![json!({
@@ -2089,14 +2089,14 @@ fn phase7_ccpanes_process_restart_canary_recovers_fake_endpoint_without_duplicat
                 .get("createdAtMs")
                 .and_then(Value::as_i64)
                 .unwrap_or(0),
-            output: "synthetic output after fake CC-Panes process restart".to_owned(),
+            output: "synthetic output after fake PaneForge process restart".to_owned(),
         }],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
     assert_ne!(old_endpoint, fake_b.endpoint());
-    let mut adapter_b = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake_b.endpoint(), Vec::new(), 2).unwrap(),
+    let mut adapter_b = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake_b.endpoint(), Vec::new(), 2).unwrap(),
         short_timeouts,
     )
     .unwrap();
@@ -2133,7 +2133,7 @@ fn phase7_ccpanes_process_restart_canary_recovers_fake_endpoint_without_duplicat
     assert!(snapshot.terminal);
     assert!(snapshot.succeeded);
     let output = snapshot.output.unwrap();
-    assert!(output.contains("after fake CC-Panes process restart"));
+    assert!(output.contains("after fake PaneForge process restart"));
     let artifact_sha256 = "a".repeat(64);
     {
         let mut runtime = runtime.borrow_mut();
@@ -2246,11 +2246,11 @@ fn phase7_multi_worker_capacity_canary_batches_fake_launches_without_overdispatc
         .unwrap(),
     ));
     let repository_registration =
-        prepare_synthetic_git_repository(dir.path(), "codex-ccpanes-phase7-capacity").unwrap();
+        prepare_synthetic_git_repository(dir.path(), "codex-paneforge-phase7-capacity").unwrap();
     let workspace_name =
         dedicated_workspace_name_for_project_path(&repository_registration.repository.path);
     let project_name = "phase7-capacity-project";
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior {
         complete_launches: true,
         workspaces: vec![json!({"id": "workspace-secret-id", "name": workspace_name})],
         projects: vec![json!({
@@ -2259,11 +2259,11 @@ fn phase7_multi_worker_capacity_canary_batches_fake_launches_without_overdispatc
             "path": repository_registration.repository.path.clone(),
             "workspaceName": workspace_name
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
         AdapterTimeouts::default(),
     )
     .unwrap();

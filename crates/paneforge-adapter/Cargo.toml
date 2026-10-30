@@ -1,12 +1,12 @@
 [package]
-name = "ccpanes-adapter"
+name = "paneforge-adapter"
 version = "0.1.0-beta.3"
 edition = "2021"
 license = "MIT"
-description = "HTTP MCP adapter contract for official CC-Panes"
+description = "HTTP MCP adapter contract for official PaneForge"
 
 [lib]
-name = "ccpanes_adapter"
+name = "paneforge_adapter"
 path = "src/lib.rs"
 
 [dependencies]

@@ -30,7 +30,7 @@ git diff --check
 ## 修改边界
 
 - 使用合成 child 测试启动边界；
-- 真实 CC-Panes 只执行只读 probe 和 doctor；
+- 真实 PaneForge 只执行只读 probe 和 doctor；
 - 保持官方 EXE、数据库、配置和项目 Session 原样；
 - 新增依赖时同步审查许可证和 `Cargo.lock`；
 - 发布行为遵循 `docs/RELEASE.md`。

@@ -5,7 +5,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 
-use crate::{AdapterReadiness, CapabilitySnapshot, CCPANES_MCP_PROTOCOL_VERSION};
+use crate::{AdapterReadiness, CapabilitySnapshot, PANEFORGE_MCP_PROTOCOL_VERSION};
 
 pub const TOOL_LAUNCH_TASK: &str = "launch_task";
 pub const TOOL_LIST_SESSIONS: &str = "list_sessions";
@@ -21,7 +21,7 @@ pub const TOOL_LIST_PROJECTS: &str = "list_projects";
 pub const TOOL_CREATE_WORKSPACE: &str = "create_workspace";
 pub const TOOL_ADD_PROJECT_TO_WORKSPACE: &str = "add_project_to_workspace";
 
-pub const BASELINE_REQUIRED_CCPANES_TOOLS: &[&str] =
+pub const BASELINE_REQUIRED_PANEFORGE_TOOLS: &[&str] =
     &[TOOL_LAUNCH_TASK, TOOL_LIST_SESSIONS, TOOL_LIST_PANES];
 
 pub const DISPATCH_CAPABILITY_TOOLS: &[&str] = &[TOOL_GET_SESSION_STATUS, TOOL_GET_SESSION_OUTPUT];
@@ -224,12 +224,12 @@ pub fn validate_protocol(initialize_result: &Value) -> Result<(), CoordinationEr
         .get("protocolVersion")
         .and_then(Value::as_str)
         .unwrap_or_default();
-    if actual == CCPANES_MCP_PROTOCOL_VERSION {
+    if actual == PANEFORGE_MCP_PROTOCOL_VERSION {
         Ok(())
     } else {
         Err(CoordinationError::new(
             ErrorCode::AdapterIncompatible,
-            format!("expected CC-Panes MCP protocol {CCPANES_MCP_PROTOCOL_VERSION}, got {actual}"),
+            format!("expected PaneForge MCP protocol {PANEFORGE_MCP_PROTOCOL_VERSION}, got {actual}"),
         ))
     }
 }
@@ -246,19 +246,19 @@ pub fn validate_tool_contract(
         .ok_or_else(|| {
             CoordinationError::new(
                 ErrorCode::AdapterIncompatible,
-                format!("required CC-Panes tool {name} is missing"),
+                format!("required PaneForge tool {name} is missing"),
             )
         })?;
     let schema = tool_schema(tool).ok_or_else(|| {
         CoordinationError::new(
             ErrorCode::AdapterIncompatible,
-            format!("CC-Panes tool {name} has no input schema"),
+            format!("PaneForge tool {name} has no input schema"),
         )
     })?;
     if !schema_accepts_type(schema, &["object"]) {
         return Err(CoordinationError::new(
             ErrorCode::AdapterIncompatible,
-            format!("CC-Panes tool {name} input schema must accept an object"),
+            format!("PaneForge tool {name} input schema must accept an object"),
         ));
     }
     let properties = schema
@@ -291,7 +291,7 @@ pub fn validate_tool_contract(
         return Err(CoordinationError::new(
             ErrorCode::AdapterIncompatible,
             format!(
-                "CC-Panes tool {name} schema missing properties={missing_properties:?} required={missing_required:?}"
+                "PaneForge tool {name} schema missing properties={missing_properties:?} required={missing_required:?}"
             ),
         ));
     }
@@ -329,7 +329,7 @@ fn validate_tool_argument_kind(
         .ok_or_else(|| {
             CoordinationError::new(
                 ErrorCode::AdapterIncompatible,
-                format!("CC-Panes tool {tool_name} schema omitted property {property_name}"),
+                format!("PaneForge tool {tool_name} schema omitted property {property_name}"),
             )
         })?;
     let compatible = match expected {
@@ -348,7 +348,7 @@ fn validate_tool_argument_kind(
         Err(CoordinationError::new(
             ErrorCode::AdapterIncompatible,
             format!(
-                "CC-Panes tool {tool_name} property {property_name} has incompatible input type"
+                "PaneForge tool {tool_name} property {property_name} has incompatible input type"
             ),
         ))
     }

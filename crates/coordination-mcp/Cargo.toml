@@ -3,14 +3,14 @@ name = "coordination-mcp"
 version = "0.1.0-beta.3"
 edition = "2021"
 license = "MIT"
-description = "stdio MCP server for Codex + CC-Panes Coordination Plane"
+description = "stdio MCP server for Codex + PaneForge Coordination Plane"
 
 [lib]
 name = "coordination_mcp"
 path = "src/lib.rs"
 
 [[bin]]
-name = "codex-ccpanes-mcp"
+name = "codex-paneforge-mcp"
 path = "src/main.rs"
 
 [dependencies]
@@ -20,7 +20,7 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 
 [dev-dependencies]
-ccpanes-adapter = { path = "../ccpanes-adapter" }
+paneforge-adapter = { path = "../paneforge-adapter" }
 coordinator = { path = "../coordinator" }
 coordination-store = { path = "../coordination-store" }
 tempfile = "3.27.0"

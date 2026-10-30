@@ -1,19 +1,19 @@
 [CmdletBinding()]
 param(
-    [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA "CodexCCPanes"),
+    [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA "CodexPaneForge"),
     [switch]$DesktopShortcut,
     [switch]$SkipShortcuts,
     [switch]$SkipRegistry,
     [switch]$Quiet,
     [switch]$ConfigureCodexMcp,
     [string]$CodexConfigPath,
-    [string]$CodexMcpRegistrationName = "codex_ccpanes"
+    [string]$CodexMcpRegistrationName = "codex_paneforge"
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$ProductId = "CodexCCPanesCompanion"
+$ProductId = "CodexPaneForgeCompanion"
 $PackageRoot = [System.IO.Path]::GetFullPath((Split-Path -Parent $PSCommandPath))
 $InstallRoot = [System.IO.Path]::GetFullPath($InstallRoot)
 $VersionFile = Join-Path $PackageRoot "VERSION"
@@ -22,7 +22,7 @@ $ChecksumsFile = Join-Path $PackageRoot "SHA256SUMS"
 function Write-Step {
     param([string]$Message)
     if (-not $Quiet) {
-        Write-Host "[Codex + CC-Panes] $Message"
+        Write-Host "[Codex + PaneForge] $Message"
     }
 }
 
@@ -153,16 +153,16 @@ if ($CodexMcpRegistrationName -notmatch '^[A-Za-z0-9_-]+$') {
 foreach ($required in @(
     "VERSION",
     "SHA256SUMS",
-    "codex-ccpanes.exe",
-    "CodexCCPanes.exe",
-    "codex-ccpanes-coordinator.exe",
-    "codex-ccpanes-mcp.exe",
+    "codex-paneforge.exe",
+    "CodexPaneForge.exe",
+    "codex-paneforge-coordinator.exe",
+    "codex-paneforge-mcp.exe",
     "ARTIFACT_MANIFEST.json",
     "Configure-CodexMcp.ps1",
     "EXTERNAL_WINDOWS_ACCEPTANCE.md",
     "Manage-Coordinator.ps1",
     "RELEASE_NOTES_0.2.0-beta.1.md",
-    "Uninstall-CodexCCPanes.ps1"
+    "Uninstall-CodexPaneForge.ps1"
 )) {
     $path = Join-Path $PackageRoot $required
     if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
@@ -220,10 +220,10 @@ New-Item -ItemType Directory -Path $StagingRoot | Out-Null
 try {
     Write-Step "Verifying and staging $Version"
     $payload = @(
-        "codex-ccpanes.exe",
-        "CodexCCPanes.exe",
-        "codex-ccpanes-coordinator.exe",
-        "codex-ccpanes-mcp.exe",
+        "codex-paneforge.exe",
+        "CodexPaneForge.exe",
+        "codex-paneforge-coordinator.exe",
+        "codex-paneforge-mcp.exe",
         "ARTIFACT_MANIFEST.json",
         "Configure-CodexMcp.ps1",
         "Manage-Coordinator.ps1",
@@ -281,15 +281,15 @@ try {
         Move-Item -LiteralPath $StagingRoot -Destination $VersionRoot
     }
 
-    Copy-Item -LiteralPath (Join-Path $PackageRoot "Uninstall-CodexCCPanes.ps1") `
-        -Destination (Join-Path $InstallRoot "Uninstall-CodexCCPanes.ps1") -Force
+    Copy-Item -LiteralPath (Join-Path $PackageRoot "Uninstall-CodexPaneForge.ps1") `
+        -Destination (Join-Path $InstallRoot "Uninstall-CodexPaneForge.ps1") -Force
     Copy-Item -LiteralPath (Join-Path $PackageRoot "Manage-Coordinator.ps1") `
         -Destination (Join-Path $InstallRoot "Manage-Coordinator.ps1") -Force
 
-    $guiExecutable = Join-Path $VersionRoot "CodexCCPanes.exe"
-    $cliExecutable = Join-Path $VersionRoot "codex-ccpanes.exe"
-    $coordinatorExecutable = Join-Path $VersionRoot "codex-ccpanes-coordinator.exe"
-    $mcpExecutable = Join-Path $VersionRoot "codex-ccpanes-mcp.exe"
+    $guiExecutable = Join-Path $VersionRoot "CodexPaneForge.exe"
+    $cliExecutable = Join-Path $VersionRoot "codex-paneforge.exe"
+    $coordinatorExecutable = Join-Path $VersionRoot "codex-paneforge-coordinator.exe"
+    $mcpExecutable = Join-Path $VersionRoot "codex-paneforge-mcp.exe"
     $coordinatorLifecycleScript = Join-Path $InstallRoot "Manage-Coordinator.ps1"
     foreach ($file in @($guiExecutable, $cliExecutable, $coordinatorExecutable, $mcpExecutable)) {
         if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
@@ -329,15 +329,15 @@ try {
     if (-not $SkipShortcuts) {
         $startMenu = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs"
         New-Item -ItemType Directory -Force -Path $startMenu | Out-Null
-        $startShortcut = Join-Path $startMenu "Codex + CC-Panes.lnk"
+        $startShortcut = Join-Path $startMenu "Codex + PaneForge.lnk"
         New-Shortcut -Path $startShortcut -Target $guiExecutable `
-            -WorkingDirectory $VersionRoot -Description "Safely launch official CC-Panes for Codex"
+            -WorkingDirectory $VersionRoot -Description "Safely launch official PaneForge for Codex"
         $shortcutPaths += $startShortcut
         if ($DesktopShortcut) {
             $desktop = [Environment]::GetFolderPath("Desktop")
-            $desktopLink = Join-Path $desktop "Codex + CC-Panes.lnk"
+            $desktopLink = Join-Path $desktop "Codex + PaneForge.lnk"
             New-Shortcut -Path $desktopLink -Target $guiExecutable `
-                -WorkingDirectory $VersionRoot -Description "Safely launch official CC-Panes for Codex"
+                -WorkingDirectory $VersionRoot -Description "Safely launch official PaneForge for Codex"
             $shortcutPaths += $desktopLink
         }
     }
@@ -345,11 +345,11 @@ try {
     if (-not $SkipRegistry) {
         $uninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\$ProductId"
         New-Item -Path $uninstallKey -Force | Out-Null
-        $uninstallScript = Join-Path $InstallRoot "Uninstall-CodexCCPanes.ps1"
+        $uninstallScript = Join-Path $InstallRoot "Uninstall-CodexPaneForge.ps1"
         $uninstallCommand = "powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$uninstallScript`""
-        New-ItemProperty -Path $uninstallKey -Name DisplayName -Value "Codex + CC-Panes Companion" -Force | Out-Null
+        New-ItemProperty -Path $uninstallKey -Name DisplayName -Value "Codex + PaneForge Companion" -Force | Out-Null
         New-ItemProperty -Path $uninstallKey -Name DisplayVersion -Value $Version -Force | Out-Null
-        New-ItemProperty -Path $uninstallKey -Name Publisher -Value "Codex + CC-Panes Companion" -Force | Out-Null
+        New-ItemProperty -Path $uninstallKey -Name Publisher -Value "Codex + PaneForge Companion" -Force | Out-Null
         New-ItemProperty -Path $uninstallKey -Name DisplayIcon -Value $guiExecutable -Force | Out-Null
         New-ItemProperty -Path $uninstallKey -Name UninstallString -Value $uninstallCommand -Force | Out-Null
         New-ItemProperty -Path $uninstallKey -Name NoModify -PropertyType DWord -Value 1 -Force | Out-Null

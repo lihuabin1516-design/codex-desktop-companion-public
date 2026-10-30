@@ -1,25 +1,25 @@
 [CmdletBinding()]
 param(
-    [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA "CodexCCPanes"),
+    [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA "CodexPaneForge"),
     [switch]$PurgeData,
     [switch]$SkipShortcuts,
     [switch]$SkipRegistry,
     [switch]$Quiet,
     [switch]$RemoveCodexMcp,
     [string]$CodexConfigPath,
-    [string]$CodexMcpRegistrationName = "codex_ccpanes"
+    [string]$CodexMcpRegistrationName = "codex_paneforge"
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$ProductId = "CodexCCPanesCompanion"
+$ProductId = "CodexPaneForgeCompanion"
 $InstallRoot = [System.IO.Path]::GetFullPath($InstallRoot)
 
 function Write-Step {
     param([string]$Message)
     if (-not $Quiet) {
-        Write-Host "[Codex + CC-Panes] $Message"
+        Write-Host "[Codex + PaneForge] $Message"
     }
 }
 
@@ -107,7 +107,7 @@ foreach ($file in @(
     "current.json",
     "install-state.json",
     "Manage-Coordinator.ps1",
-    "Uninstall-CodexCCPanes.ps1"
+    "Uninstall-CodexPaneForge.ps1"
 )) {
     $path = Join-Path $InstallRoot $file
     Assert-ChildPath -Parent $InstallRoot -Child $path
@@ -124,4 +124,4 @@ if ($PurgeData -and (Test-Path -LiteralPath $InstallRoot -PathType Container)) {
     Remove-Item -LiteralPath $InstallRoot -Recurse -Force
 }
 
-Write-Step "Uninstall complete; Codex and official CC-Panes were not modified"
+Write-Step "Uninstall complete; Codex and official PaneForge were not modified"

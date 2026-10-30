@@ -2,15 +2,15 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::time::Duration;
 
-use ccpanes_adapter::{
-    ccpanes_endpoint_from_discovery_value, dedicated_workspace_name_for_project_path,
+use paneforge_adapter::{
+    paneforge_endpoint_from_discovery_value, dedicated_workspace_name_for_project_path,
     default_fake_tools, ensure_dedicated_workspace_project, negotiate_capabilities,
-    read_ccpanes_discovery_file, require_dispatch_requalification,
+    read_paneforge_discovery_file, require_dispatch_requalification,
     run_dedicated_workspace_project_gate, run_read_only_preflight, AdapterHeader, AdapterReadiness,
-    AdapterTimeouts, CapabilitySnapshot, CcpanesAdapter, CcpanesEndpointConfig,
-    DedicatedWorkspaceReadiness, DedicatedWorkspaceSpec, FakeCcpanesBehavior, FakeCcpanesServer,
-    FakeJsonRpcError, FakeResponseMode, BASELINE_REQUIRED_CCPANES_TOOLS,
-    CCPANES_MCP_PROTOCOL_VERSION, DISPATCH_CAPABILITY_TOOLS, OPTIONAL_SESSION_CONTROL_TOOLS,
+    AdapterTimeouts, CapabilitySnapshot, PaneForgeAdapter, PaneForgeEndpointConfig,
+    DedicatedWorkspaceReadiness, DedicatedWorkspaceSpec, FakePaneForgeBehavior, FakePaneForgeServer,
+    FakeJsonRpcError, FakeResponseMode, BASELINE_REQUIRED_PANEFORGE_TOOLS,
+    PANEFORGE_MCP_PROTOCOL_VERSION, DISPATCH_CAPABILITY_TOOLS, OPTIONAL_SESSION_CONTROL_TOOLS,
     TOOL_ADD_PROJECT_TO_WORKSPACE, TOOL_CREATE_WORKSPACE, TOOL_GET_SESSION_OUTPUT,
     TOOL_GET_SESSION_STATUS, TOOL_KILL_SESSION, TOOL_LAUNCH_TASK, TOOL_LIST_PANES,
     TOOL_LIST_PROJECTS, TOOL_LIST_SESSIONS, TOOL_LIST_WORKSPACES, TOOL_SUBMIT_TO_SESSION,
@@ -22,8 +22,8 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use tempfile::tempdir;
 
-fn config(endpoint: &str, token: &str, generation: u64) -> CcpanesEndpointConfig {
-    CcpanesEndpointConfig::new(
+fn config(endpoint: &str, token: &str, generation: u64) -> PaneForgeEndpointConfig {
+    PaneForgeEndpointConfig::new(
         endpoint.to_owned(),
         vec![AdapterHeader::new("Authorization", format!("Bearer {token}")).unwrap()],
         generation,
@@ -39,7 +39,7 @@ fn launch_args() -> serde_json::Value {
     json!({
         "projectPath": "D:/SYNTHETIC",
         "prompt": "produce result",
-        "title": "[CODEX-CCPANES:workflow-1:worker-1] worker",
+        "title": "[CODEX-PANEFORGE:workflow-1:worker-1] worker",
         "cliTool": "codex",
         "clientRequestId": "request-1",
         "futureRejected": "not forwarded"
@@ -48,9 +48,9 @@ fn launch_args() -> serde_json::Value {
 
 #[test]
 fn reconcile_session_keeps_output_available_before_terminal_state() {
-    let fake = FakeCcpanesServer::start(FakeCcpanesBehavior::default()).unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
+    let fake = FakePaneForgeServer::start(FakePaneForgeBehavior::default()).unwrap();
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(fake.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -70,7 +70,7 @@ fn reconcile_session_keeps_output_available_before_terminal_state() {
 }
 
 fn v0123_capability_fixture() -> Value {
-    serde_json::from_str(include_str!("fixtures/ccpanes-v0.12.3-capabilities.json")).unwrap()
+    serde_json::from_str(include_str!("fixtures/paneforge-v0.12.3-capabilities.json")).unwrap()
 }
 
 fn fake_tools_with_rotation_marker() -> Vec<Value> {
@@ -98,7 +98,7 @@ fn assert_json_omits<T: Serialize>(label: &str, value: &T, forbidden_values: &[&
     }
 }
 
-fn assert_no_worker_or_workspace_side_effects(server: &FakeCcpanesServer) {
+fn assert_no_worker_or_workspace_side_effects(server: &FakePaneForgeServer) {
     let records = server.records();
     for forbidden_tool in [
         TOOL_CREATE_WORKSPACE,
@@ -122,19 +122,19 @@ fn assert_no_worker_or_workspace_side_effects(server: &FakeCcpanesServer) {
 
 #[test]
 fn fake_json_server_drives_launch_status_output_submit_kill_and_reconcile() {
-    let behavior = FakeCcpanesBehavior {
+    let behavior = FakePaneForgeBehavior {
         required_authorization: Some("Bearer TOKEN_ONE".to_owned()),
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     };
-    let server = FakeCcpanesServer::start(behavior).unwrap();
+    let server = FakePaneForgeServer::start(behavior).unwrap();
     let mut adapter =
-        CcpanesAdapter::new(config(server.endpoint(), "TOKEN_ONE", 1), short_timeouts()).unwrap();
+        PaneForgeAdapter::new(config(server.endpoint(), "TOKEN_ONE", 1), short_timeouts()).unwrap();
 
     let capability = adapter.discover().unwrap();
     assert_eq!(capability.readiness, AdapterReadiness::Ready);
     assert_eq!(
         capability.protocol_version.as_deref(),
-        Some(CCPANES_MCP_PROTOCOL_VERSION)
+        Some(PANEFORGE_MCP_PROTOCOL_VERSION)
     );
     assert_eq!(adapter.session_id(), Some("fake-mcp-session"));
 
@@ -167,7 +167,7 @@ fn fake_json_server_drives_launch_status_output_submit_kill_and_reconcile() {
     let binding = adapter
         .find_unknown_dispatch(
             "request-1",
-            "[CODEX-CCPANES:workflow-1:worker-1]",
+            "[CODEX-PANEFORGE:workflow-1:worker-1]",
             &prompt_hash,
             1_001,
         )
@@ -211,7 +211,7 @@ fn v0123_capability_fixture_negotiates_session_primitives() {
         ])
     );
     assert_eq!(
-        BASELINE_REQUIRED_CCPANES_TOOLS,
+        BASELINE_REQUIRED_PANEFORGE_TOOLS,
         [TOOL_LAUNCH_TASK, TOOL_LIST_SESSIONS, TOOL_LIST_PANES]
     );
     assert_eq!(
@@ -351,13 +351,13 @@ fn missing_dispatch_capability_blocks_launch_before_worker_side_effect() {
         .filter(|tool| tool["name"] != TOOL_GET_SESSION_OUTPUT)
         .cloned()
         .collect();
-    let server = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server = FakePaneForgeServer::start(FakePaneForgeBehavior {
         tools,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -392,13 +392,13 @@ fn missing_optional_session_tools_fail_typed_without_tool_call() {
         })
         .cloned()
         .collect();
-    let server = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server = FakePaneForgeServer::start(FakePaneForgeBehavior {
         tools,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -486,13 +486,13 @@ fn v0123_kill_schema_omits_reason_and_optional_wait_write_are_callable() {
         .as_array()
         .unwrap()
         .clone();
-    let server = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server = FakePaneForgeServer::start(FakePaneForgeBehavior {
         tools,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -519,13 +519,13 @@ fn v0123_kill_schema_omits_reason_and_optional_wait_write_are_callable() {
 
 #[test]
 fn fake_sse_server_uses_same_adapter_contract() {
-    let behavior = FakeCcpanesBehavior {
+    let behavior = FakePaneForgeBehavior {
         response_mode: FakeResponseMode::Sse,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     };
-    let server = FakeCcpanesServer::start(behavior).unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let server = FakePaneForgeServer::start(behavior).unwrap();
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -537,20 +537,20 @@ fn fake_sse_server_uses_same_adapter_contract() {
 
 #[test]
 fn response_timeout_after_launch_is_dispatch_result_unknown() {
-    let behavior = FakeCcpanesBehavior {
+    let behavior = FakePaneForgeBehavior {
         hang_after_request: true,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     };
-    let server = FakeCcpanesServer::start(behavior).unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let server = FakePaneForgeServer::start(behavior).unwrap();
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
     let capability = CapabilitySnapshot {
         readiness: AdapterReadiness::Ready,
         server_version: Some("fake".to_owned()),
-        protocol_version: Some(CCPANES_MCP_PROTOCOL_VERSION.to_owned()),
+        protocol_version: Some(PANEFORGE_MCP_PROTOCOL_VERSION.to_owned()),
         tools: vec!["launch_task".to_owned()],
         capability_digest: "digest".to_owned(),
         launch_task_properties: vec!["projectPath".to_owned(), "prompt".to_owned()],
@@ -576,8 +576,8 @@ fn connect_phase_failure_is_adapter_not_ready() {
     let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let endpoint = format!("http://{}/mcp", listener.local_addr().unwrap());
     drop(listener);
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(endpoint, Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(endpoint, Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -588,24 +588,24 @@ fn connect_phase_failure_is_adapter_not_ready() {
 
 #[test]
 fn discovery_and_token_rotation_are_reflected_without_secret_disclosure() {
-    let server_one = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server_one = FakePaneForgeServer::start(FakePaneForgeBehavior {
         required_authorization: Some("Bearer TOKEN_ALPHA".to_owned()),
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let server_two = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server_two = FakePaneForgeServer::start(FakePaneForgeBehavior {
         required_authorization: Some("Bearer TOKEN_BETA".to_owned()),
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
     let dir = tempdir().unwrap();
-    let first_path = dir.path().join("ccpanes-alpha.json");
-    let second_path = dir.path().join("ccpanes-beta.json");
+    let first_path = dir.path().join("paneforge-alpha.json");
+    let second_path = dir.path().join("paneforge-beta.json");
     fs::write(
         &first_path,
         json!({
             "mcpServers": {
-                "ccpanes": {
+                "paneforge": {
                     "url": server_one.endpoint(),
                     "headers": {"Authorization": "Bearer TOKEN_ALPHA"}
                 }
@@ -618,7 +618,7 @@ fn discovery_and_token_rotation_are_reflected_without_secret_disclosure() {
         &second_path,
         json!({
             "mcpServers": {
-                "ccpanes": {
+                "paneforge": {
                     "url": server_two.endpoint(),
                     "headers": {"Authorization": "Bearer TOKEN_BETA"}
                 }
@@ -628,8 +628,8 @@ fn discovery_and_token_rotation_are_reflected_without_secret_disclosure() {
     )
     .unwrap();
 
-    let first = read_ccpanes_discovery_file(&first_path, 1).unwrap();
-    let second = read_ccpanes_discovery_file(&second_path, 2).unwrap();
+    let first = read_paneforge_discovery_file(&first_path, 1).unwrap();
+    let second = read_paneforge_discovery_file(&second_path, 2).unwrap();
     assert_ne!(first.endpoint, second.endpoint);
     assert_ne!(
         first.sanitized().header_value_digest,
@@ -641,11 +641,11 @@ fn discovery_and_token_rotation_are_reflected_without_secret_disclosure() {
     assert!(!first_json.contains("TOKEN_ALPHA"));
     assert!(!second_json.contains("TOKEN_BETA"));
 
-    CcpanesAdapter::new(first, short_timeouts())
+    PaneForgeAdapter::new(first, short_timeouts())
         .unwrap()
         .discover()
         .unwrap();
-    CcpanesAdapter::new(second, short_timeouts())
+    PaneForgeAdapter::new(second, short_timeouts())
         .unwrap()
         .discover()
         .unwrap();
@@ -653,25 +653,25 @@ fn discovery_and_token_rotation_are_reflected_without_secret_disclosure() {
 
 #[test]
 fn phase7_token_discovery_rotation_canary_refreshes_preflight_without_secret_leak() {
-    let server_one = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server_one = FakePaneForgeServer::start(FakePaneForgeBehavior {
         required_authorization: Some("Bearer TOKEN_ALPHA".to_owned()),
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let server_two = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server_two = FakePaneForgeServer::start(FakePaneForgeBehavior {
         required_authorization: Some("Bearer TOKEN_BETA".to_owned()),
         tools: fake_tools_with_rotation_marker(),
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
     let dir = tempdir().unwrap();
-    let first_path = dir.path().join("ccpanes-alpha.json");
-    let second_path = dir.path().join("ccpanes-beta.json");
+    let first_path = dir.path().join("paneforge-alpha.json");
+    let second_path = dir.path().join("paneforge-beta.json");
     fs::write(
         &first_path,
         json!({
             "mcpServers": {
-                "ccpanes": {
+                "paneforge": {
                     "url": server_one.endpoint(),
                     "headers": {"Authorization": "Bearer TOKEN_ALPHA"}
                 }
@@ -684,7 +684,7 @@ fn phase7_token_discovery_rotation_canary_refreshes_preflight_without_secret_lea
         &second_path,
         json!({
             "mcpServers": {
-                "ccpanes": {
+                "paneforge": {
                     "url": server_two.endpoint(),
                     "headers": {"Authorization": "Bearer TOKEN_BETA"}
                 }
@@ -694,9 +694,9 @@ fn phase7_token_discovery_rotation_canary_refreshes_preflight_without_secret_lea
     )
     .unwrap();
 
-    let first = read_ccpanes_discovery_file(&first_path, 7).unwrap();
+    let first = read_paneforge_discovery_file(&first_path, 7).unwrap();
     let first_header_digest = first.sanitized().header_value_digest;
-    let mut adapter = CcpanesAdapter::new(first, short_timeouts()).unwrap();
+    let mut adapter = PaneForgeAdapter::new(first, short_timeouts()).unwrap();
     let first_report = run_read_only_preflight(&mut adapter);
 
     assert_eq!(first_report.readiness, AdapterReadiness::Ready);
@@ -729,13 +729,13 @@ fn phase7_token_discovery_rotation_canary_refreshes_preflight_without_secret_lea
             .is_some_and(|digest| digest.len() == 64)
     }));
 
-    let stale_config = CcpanesEndpointConfig::new(
+    let stale_config = PaneForgeEndpointConfig::new(
         server_two.endpoint().to_owned(),
         vec![AdapterHeader::new("Authorization", "Bearer TOKEN_ALPHA").unwrap()],
         8,
     )
     .unwrap();
-    let mut stale_adapter = CcpanesAdapter::new(stale_config, short_timeouts()).unwrap();
+    let mut stale_adapter = PaneForgeAdapter::new(stale_config, short_timeouts()).unwrap();
     let stale_report = run_read_only_preflight(&mut stale_adapter);
 
     assert_eq!(stale_report.readiness, AdapterReadiness::Degraded);
@@ -751,9 +751,9 @@ fn phase7_token_discovery_rotation_canary_refreshes_preflight_without_secret_lea
         &["TOKEN_ALPHA", "TOKEN_BETA"],
     );
 
-    let second = read_ccpanes_discovery_file(&second_path, 9).unwrap();
+    let second = read_paneforge_discovery_file(&second_path, 9).unwrap();
     let second_header_digest = second.sanitized().header_value_digest;
-    let mut rotated_adapter = CcpanesAdapter::new(second, short_timeouts()).unwrap();
+    let mut rotated_adapter = PaneForgeAdapter::new(second, short_timeouts()).unwrap();
     let second_report = run_read_only_preflight(&mut rotated_adapter);
 
     assert_eq!(second_report.readiness, AdapterReadiness::Ready);
@@ -806,13 +806,13 @@ fn structured_and_text_business_errors_map_to_safe_public_errors() {
         "tools/call:launch_task".to_owned(),
         FakeJsonRpcError::new(-32602, "invalid Authorization: Bearer TOKEN_PLACEHOLDER"),
     );
-    let server = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server = FakePaneForgeServer::start(FakePaneForgeBehavior {
         jsonrpc_errors,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -828,13 +828,13 @@ fn structured_and_text_business_errors_map_to_safe_public_errors() {
         "launch_task".to_owned(),
         "错误: Authorization: Bearer TOKEN_PLACEHOLDER 项目路径未注册".to_owned(),
     );
-    let server = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server = FakePaneForgeServer::start(FakePaneForgeBehavior {
         tool_text_errors,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -848,8 +848,8 @@ fn structured_and_text_business_errors_map_to_safe_public_errors() {
 
 #[test]
 fn discovery_value_missing_required_url_fails_closed() {
-    let error = ccpanes_endpoint_from_discovery_value(
-        &json!({"mcpServers": {"ccpanes": {"headers": {}}}}),
+    let error = paneforge_endpoint_from_discovery_value(
+        &json!({"mcpServers": {"paneforge": {"headers": {}}}}),
         1,
     )
     .expect_err("missing url");
@@ -858,9 +858,9 @@ fn discovery_value_missing_required_url_fails_closed() {
 
 #[test]
 fn read_only_preflight_negotiates_inventory_without_worker_side_effects() {
-    let server = FakeCcpanesServer::start(FakeCcpanesBehavior::default()).unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let server = FakePaneForgeServer::start(FakePaneForgeBehavior::default()).unwrap();
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -917,13 +917,13 @@ fn read_only_preflight_dispatch_requalification_requires_dispatch_capability() {
         .filter(|tool| tool["name"] != TOOL_GET_SESSION_OUTPUT)
         .cloned()
         .collect();
-    let server = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server = FakePaneForgeServer::start(FakePaneForgeBehavior {
         tools,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -948,16 +948,16 @@ fn read_only_preflight_dispatch_requalification_requires_dispatch_capability() {
 #[test]
 fn read_only_preflight_dispatch_requalification_accepts_v0123_fixture() {
     let fixture = v0123_capability_fixture();
-    let server = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server = FakePaneForgeServer::start(FakePaneForgeBehavior {
         tools: fixture["toolsListResult"]["tools"]
             .as_array()
             .unwrap()
             .clone(),
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -972,8 +972,8 @@ fn read_only_preflight_dispatch_requalification_accepts_v0123_fixture() {
 fn dedicated_workspace_project_gate_is_read_only_for_existing_synthetic_fixture() {
     let repo = tempdir().unwrap();
     let project_path = repo.path().to_string_lossy().replace('\\', "/");
-    let workspace_name = "codex-ccpanes-phase7-fixture";
-    let behavior = FakeCcpanesBehavior {
+    let workspace_name = "codex-paneforge-phase7-fixture";
+    let behavior = FakePaneForgeBehavior {
         workspaces: vec![json!({
             "id": "workspace-secret-id",
             "name": workspace_name
@@ -984,11 +984,11 @@ fn dedicated_workspace_project_gate_is_read_only_for_existing_synthetic_fixture(
             "path": project_path,
             "workspace": workspace_name
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     };
-    let server = FakeCcpanesServer::start(behavior).unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let server = FakePaneForgeServer::start(behavior).unwrap();
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -1046,9 +1046,9 @@ fn dedicated_workspace_project_gate_is_read_only_for_existing_synthetic_fixture(
 #[test]
 fn dedicated_workspace_project_gate_reports_setup_without_creating_when_missing() {
     let repo = tempdir().unwrap();
-    let server = FakeCcpanesServer::start(FakeCcpanesBehavior::default()).unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let server = FakePaneForgeServer::start(FakePaneForgeBehavior::default()).unwrap();
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -1056,7 +1056,7 @@ fn dedicated_workspace_project_gate_reports_setup_without_creating_when_missing(
     let report = run_dedicated_workspace_project_gate(
         &mut adapter,
         DedicatedWorkspaceSpec {
-            workspace_name: "codex-ccpanes-phase7-missing".to_owned(),
+            workspace_name: "codex-paneforge-phase7-missing".to_owned(),
             project_path: repo.path().to_string_lossy().into_owned(),
             project_name: "missing-project".to_owned(),
         },
@@ -1088,9 +1088,9 @@ fn dedicated_workspace_project_setup_creates_project_path_workspace_and_adds_pro
         .expect("temp dir basename")
         .to_string_lossy()
         .into_owned();
-    let server = FakeCcpanesServer::start(FakeCcpanesBehavior::default()).unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let server = FakePaneForgeServer::start(FakePaneForgeBehavior::default()).unwrap();
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -1117,7 +1117,7 @@ fn dedicated_workspace_project_setup_creates_project_path_workspace_and_adds_pro
     assert_eq!(add_args["projectPath"], project_path);
     assert!(
         add_args.get("projectName").is_none(),
-        "CC-Panes v0.12.3 add_project_to_workspace derives project name from projectPath"
+        "PaneForge v0.12.3 add_project_to_workspace derives project name from projectPath"
     );
     let initialize_count = server
         .records()
@@ -1139,17 +1139,17 @@ fn dedicated_workspace_project_gate_rejects_existing_workspace_with_wrong_path()
     let repo = tempdir().unwrap();
     let project_path = repo.path().to_string_lossy().into_owned();
     let workspace_name = dedicated_workspace_name_for_project_path(&project_path);
-    let server = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server = FakePaneForgeServer::start(FakePaneForgeBehavior {
         workspaces: vec![json!({
             "id": "workspace-id",
             "name": workspace_name,
             "path": "D:/DIFFERENT_ROOT"
         })],
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -1185,7 +1185,7 @@ fn dedicated_workspace_project_gate_rejects_existing_workspace_with_wrong_path()
 fn dedicated_workspace_project_gate_requires_exact_project_name_path_and_workspace() {
     let repo = tempdir().unwrap();
     let project_path = repo.path().to_string_lossy().replace('\\', "/");
-    let workspace_name = "codex-ccpanes-phase7-exact-project";
+    let workspace_name = "codex-paneforge-phase7-exact-project";
     let cases = [
         (
             "missing-workspace",
@@ -1201,7 +1201,7 @@ fn dedicated_workspace_project_gate_requires_exact_project_name_path_and_workspa
                 "id": "project-id",
                 "name": "phase7-project",
                 "path": project_path,
-                "workspace": "codex-ccpanes-phase7-other"
+                "workspace": "codex-paneforge-phase7-other"
             }),
         ),
         (
@@ -1216,14 +1216,14 @@ fn dedicated_workspace_project_gate_requires_exact_project_name_path_and_workspa
     ];
 
     for (case, project) in cases {
-        let server = FakeCcpanesServer::start(FakeCcpanesBehavior {
+        let server = FakePaneForgeServer::start(FakePaneForgeBehavior {
             workspaces: vec![json!({"id": "workspace-id", "name": workspace_name})],
             projects: vec![project],
-            ..FakeCcpanesBehavior::default()
+            ..FakePaneForgeBehavior::default()
         })
         .unwrap();
-        let mut adapter = CcpanesAdapter::new(
-            CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+        let mut adapter = PaneForgeAdapter::new(
+            PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
             short_timeouts(),
         )
         .unwrap();
@@ -1261,13 +1261,13 @@ fn dedicated_workspace_project_gate_requires_workspace_project_capabilities() {
             tool.get("name").and_then(serde_json::Value::as_str) != Some(TOOL_LIST_WORKSPACES)
         })
         .collect();
-    let server = FakeCcpanesServer::start(FakeCcpanesBehavior {
+    let server = FakePaneForgeServer::start(FakePaneForgeBehavior {
         tools,
-        ..FakeCcpanesBehavior::default()
+        ..FakePaneForgeBehavior::default()
     })
     .unwrap();
-    let mut adapter = CcpanesAdapter::new(
-        CcpanesEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
+    let mut adapter = PaneForgeAdapter::new(
+        PaneForgeEndpointConfig::new(server.endpoint(), Vec::new(), 1).unwrap(),
         short_timeouts(),
     )
     .unwrap();
@@ -1275,7 +1275,7 @@ fn dedicated_workspace_project_gate_requires_workspace_project_capabilities() {
     let report = run_dedicated_workspace_project_gate(
         &mut adapter,
         DedicatedWorkspaceSpec {
-            workspace_name: "codex-ccpanes-phase7-missing-tool".to_owned(),
+            workspace_name: "codex-paneforge-phase7-missing-tool".to_owned(),
             project_path: repo.path().to_string_lossy().into_owned(),
             project_name: "missing-tool-project".to_owned(),
         },

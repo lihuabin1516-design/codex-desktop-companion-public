@@ -1,9 +1,9 @@
-# Codex + CC-Panes Companion 0.2.0-beta.1 release notes contract
+# Codex + PaneForge Companion 0.2.0-beta.1 release notes contract
 
 Contract markers:
 
 - contract: beta-release-notes/v1
-- product: CodexCCPanesCompanion
+- product: CodexPaneForgeCompanion
 - targetVersion: 0.2.0-beta.1
 - defaultRegisterUserMcp: false
 - defaultStartBackgroundCoordinator: false
@@ -17,16 +17,16 @@ Contract markers:
 ## 本测试版目标
 
 `0.2.0-beta.1` 的目标是把 Companion 从 Launcher/诊断工具扩展为三组件 Coordination Plane
-测试版交付形态，同时保持 Codex App、Codex CLI 和官方 CC-Panes 的独立安装、启动、升级和
+测试版交付形态，同时保持 Codex App、Codex CLI 和官方 PaneForge 的独立安装、启动、升级和
 卸载能力。
 
 包内组件：
 
-- `CodexCCPanes.exe`：继续负责官方 CC-Panes 发现、安全启动和 Codex Desktop 私有环境隔离；
-- `codex-ccpanes-coordinator.exe`：Coordinator 组件二进制，拥有 Workflow/Worker/Outbox/
+- `CodexPaneForge.exe`：继续负责官方 PaneForge 发现、安全启动和 Codex Desktop 私有环境隔离；
+- `codex-paneforge-coordinator.exe`：Coordinator 组件二进制，拥有 Workflow/Worker/Outbox/
   Binding/Lease/Result 的目标权威合同；
-- `codex-ccpanes-mcp.exe`：Codex App 可启动的 stdio MCP 边界二进制；
-- `codex-ccpanes.exe`：既有辅助 CLI，用于 describe、probe、doctor、audit-builds 和
+- `codex-paneforge-mcp.exe`：Codex App 可启动的 stdio MCP 边界二进制；
+- `codex-paneforge.exe`：既有辅助 CLI，用于 describe、probe、doctor、audit-builds 和
   migrate-config。
 
 ## 当前 Phase 8 package 行为
@@ -52,9 +52,9 @@ Contract markers:
 - 不注册真实用户 Codex MCP；
 - 不启动后台 Coordinator；
 - 不注册 Windows service、scheduled task 或自启动项；
-- 不连接或控制真实 CC-Panes Session；
-- 不执行真实 Worker 派发、真实 Session submit/kill 或真实 CC-Panes process restart；
-- 不读取或修改 CC-Panes 数据库、WebView storage、布局文件、真实项目或 `~/.cc-panes`；
+- 不连接或控制真实 PaneForge Session；
+- 不执行真实 Worker 派发、真实 Session submit/kill 或真实 PaneForge process restart；
+- 不读取或修改 PaneForge 数据库、WebView storage、布局文件、真实项目或 `~/.paneforge`；
 - 不修改真实 `~/.codex/config.toml`，除非用户在后续门禁中显式提供 config path 并接受该动作。
 
 ## 验证要求
@@ -75,14 +75,14 @@ Contract markers:
 ## 已知限制
 
 - 本地测试包可以 unsigned；公开生产发布必须通过 Authenticode `-RequireSignature` 门禁。
-- synthetic/fake canary 证明调度、状态和协议合同，不替代真实 CC-Panes Worker 池验收。
+- synthetic/fake canary 证明调度、状态和协议合同，不替代真实 PaneForge Worker 池验收。
 - 真实 Codex MCP 默认注册、后台 Coordinator bootstrap、通用 Coordinator→Adapter 派发启用
   和真实多 Worker E2E 仍按后续门禁推进。
-- 如果外部机器缺少官方 Codex 或 CC-Panes，真实 probe/doctor 可以记录为 `not-run`；package
+- 如果外部机器缺少官方 Codex 或 PaneForge，真实 probe/doctor 可以记录为 `not-run`；package
   inventory、安装、MCP config transaction、Coordinator lifecycle 和卸载仍必须可验收。
 
 ## 回退
 
-Companion 与官方 Codex/CC-Panes 保持独立。Beta package 失效时，用户可直接启动官方
-CC-Panes 和 Codex；重新运行上一版 Companion 安装包可切回。卸载不得移除官方安装、真实
-项目、真实 Codex config 或 CC-Panes 数据。
+Companion 与官方 Codex/PaneForge 保持独立。Beta package 失效时，用户可直接启动官方
+PaneForge 和 Codex；重新运行上一版 Companion 安装包可切回。卸载不得移除官方安装、真实
+项目、真实 Codex config 或 PaneForge 数据。

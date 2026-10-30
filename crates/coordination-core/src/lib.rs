@@ -1,4 +1,4 @@
-//! Domain contracts for the Codex + CC-Panes Coordination Plane.
+//! Domain contracts for the Codex + PaneForge Coordination Plane.
 //!
 //! This crate owns in-memory semantics only: identifiers, revisions, state
 //! machines, commands, queries, events, error codes, and WorkflowSpec v1beta1.

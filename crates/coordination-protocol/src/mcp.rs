@@ -9,31 +9,31 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::version::{
-    require_schema_version, CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION,
-    CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION, COMMAND_ACK_SCHEMA_VERSION,
+    require_schema_version, PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION,
+    PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION, COMMAND_ACK_SCHEMA_VERSION,
     RESULT_QUERY_SCHEMA_VERSION, STATUS_QUERY_SCHEMA_VERSION, WORKER_CANCEL_SCHEMA_VERSION,
     WORKER_DISPATCH_ACCEPTED_SCHEMA_VERSION, WORKER_DISPATCH_SCHEMA_VERSION,
     WORKFLOW_CANCEL_SCHEMA_VERSION, WORKFLOW_CREATE_SCHEMA_VERSION, WORKFLOW_START_SCHEMA_VERSION,
 };
 
-const CCPANES_PREFLIGHT_OUTPUT_SCHEMA_VERSION: &str = "ccpanes-adapter-readonly-preflight/v1beta1";
-const CCPANES_SYNTHETIC_CANARY_OUTPUT_SCHEMA_VERSION: &str =
-    "coordination.real-ccpanes-canary-runner/v1beta1";
-const MAX_CCPANES_PATH_LENGTH: usize = 4_096;
-const MAX_CCPANES_NAME_LENGTH: usize = 96;
-const MAX_CCPANES_MARKER_LENGTH: usize = 1_024;
-pub const CCPANES_MAX_CONNECT_TIMEOUT_MS: u64 = 30_000;
-pub const CCPANES_MAX_REQUEST_TIMEOUT_MS: u64 = 120_000;
-pub const CCPANES_MAX_CANARY_TIMEOUT_MS: u64 = 900_000;
-pub const CCPANES_MAX_CANARY_POLL_INTERVAL_MS: u64 = 10_000;
+const PANEFORGE_PREFLIGHT_OUTPUT_SCHEMA_VERSION: &str = "paneforge-adapter-readonly-preflight/v1beta1";
+const PANEFORGE_SYNTHETIC_CANARY_OUTPUT_SCHEMA_VERSION: &str =
+    "coordination.real-paneforge-canary-runner/v1beta1";
+const MAX_PANEFORGE_PATH_LENGTH: usize = 4_096;
+const MAX_PANEFORGE_NAME_LENGTH: usize = 96;
+const MAX_PANEFORGE_MARKER_LENGTH: usize = 1_024;
+pub const PANEFORGE_MAX_CONNECT_TIMEOUT_MS: u64 = 30_000;
+pub const PANEFORGE_MAX_REQUEST_TIMEOUT_MS: u64 = 120_000;
+pub const PANEFORGE_MAX_CANARY_TIMEOUT_MS: u64 = 900_000;
+pub const PANEFORGE_MAX_CANARY_POLL_INTERVAL_MS: u64 = 10_000;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum McpToolName {
     CoordinatorStatus,
     AdapterStatus,
-    CcpanesPreflight,
-    CcpanesSyntheticCanary,
+    PaneForgePreflight,
+    PaneForgeSyntheticCanary,
     WorkerDispatch,
     WorkerStatus,
     WorkerCancel,
@@ -49,8 +49,8 @@ impl McpToolName {
     pub const ALL: &'static [Self] = &[
         Self::CoordinatorStatus,
         Self::AdapterStatus,
-        Self::CcpanesPreflight,
-        Self::CcpanesSyntheticCanary,
+        Self::PaneForgePreflight,
+        Self::PaneForgeSyntheticCanary,
         Self::WorkerDispatch,
         Self::WorkerStatus,
         Self::WorkerCancel,
@@ -66,8 +66,8 @@ impl McpToolName {
         match self {
             Self::CoordinatorStatus => "coordinator_status",
             Self::AdapterStatus => "adapter_status",
-            Self::CcpanesPreflight => "ccpanes_preflight",
-            Self::CcpanesSyntheticCanary => "ccpanes_synthetic_canary",
+            Self::PaneForgePreflight => "paneforge_preflight",
+            Self::PaneForgeSyntheticCanary => "paneforge_synthetic_canary",
             Self::WorkerDispatch => "worker_dispatch",
             Self::WorkerStatus => "worker_status",
             Self::WorkerCancel => "worker_cancel",
@@ -84,8 +84,8 @@ impl McpToolName {
         match value {
             "coordinator_status" => Ok(Self::CoordinatorStatus),
             "adapter_status" => Ok(Self::AdapterStatus),
-            "ccpanes_preflight" => Ok(Self::CcpanesPreflight),
-            "ccpanes_synthetic_canary" => Ok(Self::CcpanesSyntheticCanary),
+            "paneforge_preflight" => Ok(Self::PaneForgePreflight),
+            "paneforge_synthetic_canary" => Ok(Self::PaneForgeSyntheticCanary),
             "worker_dispatch" => Ok(Self::WorkerDispatch),
             "worker_status" => Ok(Self::WorkerStatus),
             "worker_cancel" => Ok(Self::WorkerCancel),
@@ -105,13 +105,13 @@ impl McpToolName {
         match self {
             Self::CoordinatorStatus
             | Self::AdapterStatus
-            | Self::CcpanesPreflight
+            | Self::PaneForgePreflight
             | Self::WorkerStatus
             | Self::WorkflowStatus
             | Self::WorkflowEvents
             | Self::WorkflowResult => McpToolKind::Query,
             Self::WorkerDispatch
-            | Self::CcpanesSyntheticCanary
+            | Self::PaneForgeSyntheticCanary
             | Self::WorkerCancel
             | Self::WorkflowCreate
             | Self::WorkflowStart
@@ -159,13 +159,13 @@ pub const fn mcp_tool_description(name: McpToolName) -> &'static str {
     match name {
         McpToolName::CoordinatorStatus => "Read Coordinator health, schema, capacity, and metrics.",
         McpToolName::AdapterStatus => {
-            "Read CC-Panes adapter readiness snapshot from the Coordinator."
+            "Read PaneForge adapter readiness snapshot from the Coordinator."
         }
-        McpToolName::CcpanesPreflight => {
-            "Run a read-only CC-Panes capability and Session inventory preflight."
+        McpToolName::PaneForgePreflight => {
+            "Run a read-only PaneForge capability and Session inventory preflight."
         }
-        McpToolName::CcpanesSyntheticCanary => {
-            "Run one controlled synthetic foreground CC-Panes canary."
+        McpToolName::PaneForgeSyntheticCanary => {
+            "Run one controlled synthetic foreground PaneForge canary."
         }
         McpToolName::WorkerDispatch => {
             "Create a single-step Workflow and enqueue one external Worker."
@@ -185,8 +185,8 @@ pub const fn input_schema_version(name: McpToolName) -> &'static str {
     match name {
         McpToolName::WorkerDispatch => WORKER_DISPATCH_SCHEMA_VERSION,
         McpToolName::WorkflowCreate => WORKFLOW_CREATE_SCHEMA_VERSION,
-        McpToolName::CcpanesPreflight => CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION,
-        McpToolName::CcpanesSyntheticCanary => CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
+        McpToolName::PaneForgePreflight => PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION,
+        McpToolName::PaneForgeSyntheticCanary => PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
         McpToolName::CoordinatorStatus
         | McpToolName::AdapterStatus
         | McpToolName::WorkerStatus
@@ -202,8 +202,8 @@ pub const fn input_schema_version(name: McpToolName) -> &'static str {
 pub const fn output_schema_version(name: McpToolName) -> &'static str {
     match name {
         McpToolName::WorkerDispatch => WORKER_DISPATCH_ACCEPTED_SCHEMA_VERSION,
-        McpToolName::CcpanesPreflight => CCPANES_PREFLIGHT_OUTPUT_SCHEMA_VERSION,
-        McpToolName::CcpanesSyntheticCanary => CCPANES_SYNTHETIC_CANARY_OUTPUT_SCHEMA_VERSION,
+        McpToolName::PaneForgePreflight => PANEFORGE_PREFLIGHT_OUTPUT_SCHEMA_VERSION,
+        McpToolName::PaneForgeSyntheticCanary => PANEFORGE_SYNTHETIC_CANARY_OUTPUT_SCHEMA_VERSION,
         McpToolName::CoordinatorStatus
         | McpToolName::AdapterStatus
         | McpToolName::WorkerStatus
@@ -219,7 +219,7 @@ pub const fn output_schema_version(name: McpToolName) -> &'static str {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct CcpanesPreflightInput {
+pub struct PaneForgePreflightInput {
     pub schema_version: String,
     #[serde(default)]
     pub discovery_path: Option<String>,
@@ -231,7 +231,7 @@ pub struct CcpanesPreflightInput {
     pub request_timeout_ms: u64,
 }
 
-impl CcpanesPreflightInput {
+impl PaneForgePreflightInput {
     pub fn from_value(value: Value) -> Result<Self, CoordinationError> {
         let input: Self = deserialize_input(value)?;
         input.validate_contract()?;
@@ -241,30 +241,30 @@ impl CcpanesPreflightInput {
     pub fn validate_contract(&self) -> Result<(), CoordinationError> {
         require_schema_version(
             &self.schema_version,
-            CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION,
+            PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION,
         )?;
         validate_optional_bounded_string(
             "discoveryPath",
             self.discovery_path.as_deref(),
-            MAX_CCPANES_PATH_LENGTH,
+            MAX_PANEFORGE_PATH_LENGTH,
         )?;
         validate_positive("discoveryGeneration", self.discovery_generation)?;
         validate_bounded_positive(
             "connectTimeoutMs",
             self.connect_timeout_ms,
-            CCPANES_MAX_CONNECT_TIMEOUT_MS,
+            PANEFORGE_MAX_CONNECT_TIMEOUT_MS,
         )?;
         validate_bounded_positive(
             "requestTimeoutMs",
             self.request_timeout_ms,
-            CCPANES_MAX_REQUEST_TIMEOUT_MS,
+            PANEFORGE_MAX_REQUEST_TIMEOUT_MS,
         )
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct CcpanesSyntheticCanaryInput {
+pub struct PaneForgeSyntheticCanaryInput {
     pub schema_version: String,
     pub request_id: RequestId,
     #[serde(default)]
@@ -283,7 +283,7 @@ pub struct CcpanesSyntheticCanaryInput {
     pub request_timeout_ms: u64,
 }
 
-impl CcpanesSyntheticCanaryInput {
+impl PaneForgeSyntheticCanaryInput {
     pub fn from_value(value: Value) -> Result<Self, CoordinationError> {
         let input: Self = deserialize_input(value)?;
         input.validate_contract()?;
@@ -293,45 +293,45 @@ impl CcpanesSyntheticCanaryInput {
     pub fn validate_contract(&self) -> Result<(), CoordinationError> {
         require_schema_version(
             &self.schema_version,
-            CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
+            PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
         )?;
         RequestId::try_new(self.request_id.as_str())?;
         validate_optional_bounded_string(
             "discoveryPath",
             self.discovery_path.as_deref(),
-            MAX_CCPANES_PATH_LENGTH,
+            MAX_PANEFORGE_PATH_LENGTH,
         )?;
         validate_required_bounded_string(
             "projectPath",
             &self.project_path,
-            MAX_CCPANES_PATH_LENGTH,
+            MAX_PANEFORGE_PATH_LENGTH,
         )?;
         validate_required_bounded_string(
             "workspaceName",
             &self.workspace_name,
-            MAX_CCPANES_NAME_LENGTH,
+            MAX_PANEFORGE_NAME_LENGTH,
         )?;
         validate_required_bounded_string(
             "projectName",
             &self.project_name,
-            MAX_CCPANES_NAME_LENGTH,
+            MAX_PANEFORGE_NAME_LENGTH,
         )?;
-        validate_required_bounded_string("marker", &self.marker, MAX_CCPANES_MARKER_LENGTH)?;
-        validate_bounded_positive("timeoutMs", self.timeout_ms, CCPANES_MAX_CANARY_TIMEOUT_MS)?;
+        validate_required_bounded_string("marker", &self.marker, MAX_PANEFORGE_MARKER_LENGTH)?;
+        validate_bounded_positive("timeoutMs", self.timeout_ms, PANEFORGE_MAX_CANARY_TIMEOUT_MS)?;
         validate_bounded_positive(
             "pollIntervalMs",
             self.poll_interval_ms,
-            CCPANES_MAX_CANARY_POLL_INTERVAL_MS,
+            PANEFORGE_MAX_CANARY_POLL_INTERVAL_MS,
         )?;
         validate_bounded_positive(
             "connectTimeoutMs",
             self.connect_timeout_ms,
-            CCPANES_MAX_CONNECT_TIMEOUT_MS,
+            PANEFORGE_MAX_CONNECT_TIMEOUT_MS,
         )?;
         validate_bounded_positive(
             "requestTimeoutMs",
             self.request_timeout_ms,
-            CCPANES_MAX_REQUEST_TIMEOUT_MS,
+            PANEFORGE_MAX_REQUEST_TIMEOUT_MS,
         )
     }
 }
@@ -920,23 +920,23 @@ mod tests {
         })
     }
 
-    fn valid_ccpanes_preflight_value() -> Value {
+    fn valid_paneforge_preflight_value() -> Value {
         json!({
-            "schemaVersion": CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION,
+            "schemaVersion": PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION,
             "discoveryGeneration": 1,
             "connectTimeoutMs": 2000,
             "requestTimeoutMs": 8000
         })
     }
 
-    fn valid_ccpanes_synthetic_canary_value() -> Value {
+    fn valid_paneforge_synthetic_canary_value() -> Value {
         json!({
-            "schemaVersion": CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
+            "schemaVersion": PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
             "requestId": "global-canary-1",
             "projectPath": "C:/fixture/project",
-            "workspaceName": "codex-ccpanes-v0123",
+            "workspaceName": "codex-paneforge-v0123",
             "projectName": "compat-fixture",
-            "marker": "CODEX_CCPANES_GLOBAL_CANARY",
+            "marker": "CODEX_PANEFORGE_GLOBAL_CANARY",
             "timeoutMs": 420000,
             "pollIntervalMs": 750,
             "connectTimeoutMs": 2000,
@@ -956,8 +956,8 @@ mod tests {
             vec![
                 "coordinator_status",
                 "adapter_status",
-                "ccpanes_preflight",
-                "ccpanes_synthetic_canary",
+                "paneforge_preflight",
+                "paneforge_synthetic_canary",
                 "worker_dispatch",
                 "worker_status",
                 "worker_cancel",
@@ -980,46 +980,46 @@ mod tests {
     }
 
     #[test]
-    fn ccpanes_tool_names_parse_with_expected_kinds_and_versions() {
-        let preflight = McpToolName::parse("ccpanes_preflight").unwrap();
-        assert_eq!(preflight, McpToolName::CcpanesPreflight);
+    fn paneforge_tool_names_parse_with_expected_kinds_and_versions() {
+        let preflight = McpToolName::parse("paneforge_preflight").unwrap();
+        assert_eq!(preflight, McpToolName::PaneForgePreflight);
         assert_eq!(preflight.kind(), McpToolKind::Query);
         assert_eq!(
             input_schema_version(preflight),
-            CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION
+            PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION
         );
         assert_eq!(
             output_schema_version(preflight),
-            "ccpanes-adapter-readonly-preflight/v1beta1"
+            "paneforge-adapter-readonly-preflight/v1beta1"
         );
-        assert_eq!(preflight.as_str(), "ccpanes_preflight");
+        assert_eq!(preflight.as_str(), "paneforge_preflight");
         assert!(mcp_tool_description(preflight).contains("read-only"));
 
-        let canary = McpToolName::parse("ccpanes_synthetic_canary").unwrap();
-        assert_eq!(canary, McpToolName::CcpanesSyntheticCanary);
+        let canary = McpToolName::parse("paneforge_synthetic_canary").unwrap();
+        assert_eq!(canary, McpToolName::PaneForgeSyntheticCanary);
         assert_eq!(canary.kind(), McpToolKind::Command);
         assert_eq!(
             input_schema_version(canary),
-            CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION
+            PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION
         );
         assert_eq!(
             output_schema_version(canary),
-            "coordination.real-ccpanes-canary-runner/v1beta1"
+            "coordination.real-paneforge-canary-runner/v1beta1"
         );
-        assert_eq!(canary.as_str(), "ccpanes_synthetic_canary");
+        assert_eq!(canary.as_str(), "paneforge_synthetic_canary");
         assert!(mcp_tool_description(canary).contains("synthetic"));
     }
 
     #[test]
-    fn ccpanes_inputs_accept_valid_values_and_apply_defaults() {
-        let preflight = CcpanesPreflightInput::from_value(valid_ccpanes_preflight_value()).unwrap();
+    fn paneforge_inputs_accept_valid_values_and_apply_defaults() {
+        let preflight = PaneForgePreflightInput::from_value(valid_paneforge_preflight_value()).unwrap();
         assert_eq!(preflight.discovery_path, None);
         assert_eq!(preflight.discovery_generation, 1);
         assert_eq!(preflight.connect_timeout_ms, 2_000);
         assert_eq!(preflight.request_timeout_ms, 8_000);
 
         let canary =
-            CcpanesSyntheticCanaryInput::from_value(valid_ccpanes_synthetic_canary_value())
+            PaneForgeSyntheticCanaryInput::from_value(valid_paneforge_synthetic_canary_value())
                 .unwrap();
         assert_eq!(canary.discovery_path, None);
         assert_eq!(canary.request_id.as_str(), "global-canary-1");
@@ -1028,21 +1028,21 @@ mod tests {
         assert_eq!(canary.connect_timeout_ms, 2_000);
         assert_eq!(canary.request_timeout_ms, 12_000);
 
-        let default_preflight = CcpanesPreflightInput::from_value(json!({
-            "schemaVersion": CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION
+        let default_preflight = PaneForgePreflightInput::from_value(json!({
+            "schemaVersion": PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION
         }))
         .unwrap();
         assert_eq!(default_preflight.discovery_generation, 1);
         assert_eq!(default_preflight.connect_timeout_ms, 2_000);
         assert_eq!(default_preflight.request_timeout_ms, 8_000);
 
-        let default_canary = CcpanesSyntheticCanaryInput::from_value(json!({
-            "schemaVersion": CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
+        let default_canary = PaneForgeSyntheticCanaryInput::from_value(json!({
+            "schemaVersion": PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
             "requestId": "global-canary-defaults",
             "projectPath": "C:/fixture/project",
-            "workspaceName": "codex-ccpanes-v0123",
+            "workspaceName": "codex-paneforge-v0123",
             "projectName": "compat-fixture",
-            "marker": "CODEX_CCPANES_GLOBAL_CANARY"
+            "marker": "CODEX_PANEFORGE_GLOBAL_CANARY"
         }))
         .unwrap();
         assert_eq!(default_canary.timeout_ms, 420_000);
@@ -1052,38 +1052,38 @@ mod tests {
     }
 
     #[test]
-    fn ccpanes_inputs_reject_wrong_schema_and_unknown_fields() {
-        let mut preflight = valid_ccpanes_preflight_value();
-        preflight["schemaVersion"] = json!("coordination.ccpanes-preflight-request/v9");
+    fn paneforge_inputs_reject_wrong_schema_and_unknown_fields() {
+        let mut preflight = valid_paneforge_preflight_value();
+        preflight["schemaVersion"] = json!("coordination.paneforge-preflight-request/v9");
         assert_eq!(
-            CcpanesPreflightInput::from_value(preflight)
+            PaneForgePreflightInput::from_value(preflight)
                 .expect_err("wrong preflight schema")
                 .code,
             ErrorCode::SchemaVersionUnsupported
         );
 
-        let mut canary = valid_ccpanes_synthetic_canary_value();
-        canary["schemaVersion"] = json!("coordination.ccpanes-synthetic-canary-request/v9");
+        let mut canary = valid_paneforge_synthetic_canary_value();
+        canary["schemaVersion"] = json!("coordination.paneforge-synthetic-canary-request/v9");
         assert_eq!(
-            CcpanesSyntheticCanaryInput::from_value(canary)
+            PaneForgeSyntheticCanaryInput::from_value(canary)
                 .expect_err("wrong canary schema")
                 .code,
             ErrorCode::SchemaVersionUnsupported
         );
 
-        let mut preflight = valid_ccpanes_preflight_value();
+        let mut preflight = valid_paneforge_preflight_value();
         preflight["unexpected"] = json!(true);
         assert_eq!(
-            CcpanesPreflightInput::from_value(preflight)
+            PaneForgePreflightInput::from_value(preflight)
                 .expect_err("unknown preflight field")
                 .code,
             ErrorCode::InvalidRequest
         );
 
-        let mut canary = valid_ccpanes_synthetic_canary_value();
+        let mut canary = valid_paneforge_synthetic_canary_value();
         canary["unexpected"] = json!(true);
         assert_eq!(
-            CcpanesSyntheticCanaryInput::from_value(canary)
+            PaneForgeSyntheticCanaryInput::from_value(canary)
                 .expect_err("unknown canary field")
                 .code,
             ErrorCode::InvalidRequest
@@ -1091,16 +1091,16 @@ mod tests {
     }
 
     #[test]
-    fn ccpanes_inputs_reject_zero_generation_and_timeouts() {
+    fn paneforge_inputs_reject_zero_generation_and_timeouts() {
         for field in [
             "discoveryGeneration",
             "connectTimeoutMs",
             "requestTimeoutMs",
         ] {
-            let mut value = valid_ccpanes_preflight_value();
+            let mut value = valid_paneforge_preflight_value();
             value[field] = json!(0);
             assert_eq!(
-                CcpanesPreflightInput::from_value(value)
+                PaneForgePreflightInput::from_value(value)
                     .expect_err(field)
                     .code,
                 ErrorCode::InvalidRequest
@@ -1113,10 +1113,10 @@ mod tests {
             "connectTimeoutMs",
             "requestTimeoutMs",
         ] {
-            let mut value = valid_ccpanes_synthetic_canary_value();
+            let mut value = valid_paneforge_synthetic_canary_value();
             value[field] = json!(0);
             assert_eq!(
-                CcpanesSyntheticCanaryInput::from_value(value)
+                PaneForgeSyntheticCanaryInput::from_value(value)
                     .expect_err(field)
                     .code,
                 ErrorCode::InvalidRequest
@@ -1125,19 +1125,19 @@ mod tests {
     }
 
     #[test]
-    fn ccpanes_inputs_reject_timeout_values_above_public_budgets() {
+    fn paneforge_inputs_reject_timeout_values_above_public_budgets() {
         for (field, maximum) in [
             ("connectTimeoutMs", 30_000_u64),
             ("requestTimeoutMs", 120_000_u64),
         ] {
-            let mut accepted = valid_ccpanes_preflight_value();
+            let mut accepted = valid_paneforge_preflight_value();
             accepted[field] = json!(maximum);
-            CcpanesPreflightInput::from_value(accepted).expect(field);
+            PaneForgePreflightInput::from_value(accepted).expect(field);
 
-            let mut rejected = valid_ccpanes_preflight_value();
+            let mut rejected = valid_paneforge_preflight_value();
             rejected[field] = json!(maximum + 1);
             assert_eq!(
-                CcpanesPreflightInput::from_value(rejected)
+                PaneForgePreflightInput::from_value(rejected)
                     .expect_err(field)
                     .code,
                 ErrorCode::InvalidRequest
@@ -1150,14 +1150,14 @@ mod tests {
             ("connectTimeoutMs", 30_000_u64),
             ("requestTimeoutMs", 120_000_u64),
         ] {
-            let mut accepted = valid_ccpanes_synthetic_canary_value();
+            let mut accepted = valid_paneforge_synthetic_canary_value();
             accepted[field] = json!(maximum);
-            CcpanesSyntheticCanaryInput::from_value(accepted).expect(field);
+            PaneForgeSyntheticCanaryInput::from_value(accepted).expect(field);
 
-            let mut rejected = valid_ccpanes_synthetic_canary_value();
+            let mut rejected = valid_paneforge_synthetic_canary_value();
             rejected[field] = json!(maximum + 1);
             assert_eq!(
-                CcpanesSyntheticCanaryInput::from_value(rejected)
+                PaneForgeSyntheticCanaryInput::from_value(rejected)
                     .expect_err(field)
                     .code,
                 ErrorCode::InvalidRequest
@@ -1166,12 +1166,12 @@ mod tests {
     }
 
     #[test]
-    fn ccpanes_inputs_reject_empty_control_and_unbounded_strings() {
+    fn paneforge_inputs_reject_empty_control_and_unbounded_strings() {
         for invalid in ["   ", "bad\nvalue"] {
-            let mut preflight = valid_ccpanes_preflight_value();
+            let mut preflight = valid_paneforge_preflight_value();
             preflight["discoveryPath"] = json!(invalid);
             assert_eq!(
-                CcpanesPreflightInput::from_value(preflight)
+                PaneForgePreflightInput::from_value(preflight)
                     .expect_err("invalid discovery path")
                     .code,
                 ErrorCode::InvalidRequest
@@ -1184,59 +1184,59 @@ mod tests {
                 "projectName",
                 "marker",
             ] {
-                let mut canary = valid_ccpanes_synthetic_canary_value();
+                let mut canary = valid_paneforge_synthetic_canary_value();
                 canary[field] = json!(invalid);
                 assert_eq!(
-                    CcpanesSyntheticCanaryInput::from_value(canary)
+                    PaneForgeSyntheticCanaryInput::from_value(canary)
                         .expect_err(field)
                         .code,
                     ErrorCode::InvalidRequest
                 );
             }
 
-            let mut canary = valid_ccpanes_synthetic_canary_value();
+            let mut canary = valid_paneforge_synthetic_canary_value();
             canary["discoveryPath"] = json!(invalid);
             assert_eq!(
-                CcpanesSyntheticCanaryInput::from_value(canary)
+                PaneForgeSyntheticCanaryInput::from_value(canary)
                     .expect_err("invalid canary discovery path")
                     .code,
                 ErrorCode::InvalidRequest
             );
         }
 
-        let mut long_discovery_path = valid_ccpanes_preflight_value();
+        let mut long_discovery_path = valid_paneforge_preflight_value();
         long_discovery_path["discoveryPath"] = json!("D".repeat(4_097));
         assert_eq!(
-            CcpanesPreflightInput::from_value(long_discovery_path)
+            PaneForgePreflightInput::from_value(long_discovery_path)
                 .expect_err("long discovery path")
                 .code,
             ErrorCode::InvalidRequest
         );
 
-        let mut long_path = valid_ccpanes_synthetic_canary_value();
+        let mut long_path = valid_paneforge_synthetic_canary_value();
         long_path["projectPath"] = json!("P".repeat(4_097));
         assert_eq!(
-            CcpanesSyntheticCanaryInput::from_value(long_path)
+            PaneForgeSyntheticCanaryInput::from_value(long_path)
                 .expect_err("long project path")
                 .code,
             ErrorCode::InvalidRequest
         );
 
         for field in ["workspaceName", "projectName"] {
-            let mut value = valid_ccpanes_synthetic_canary_value();
+            let mut value = valid_paneforge_synthetic_canary_value();
             value[field] = json!("N".repeat(97));
             assert_eq!(
-                CcpanesSyntheticCanaryInput::from_value(value)
+                PaneForgeSyntheticCanaryInput::from_value(value)
                     .expect_err(field)
                     .code,
                 ErrorCode::InvalidRequest
             );
         }
 
-        let mut long_marker = valid_ccpanes_synthetic_canary_value();
+        let mut long_marker = valid_paneforge_synthetic_canary_value();
         long_marker["marker"] = json!("M".repeat(1_025));
         assert_eq!(
-            CcpanesSyntheticCanaryInput::from_value(long_marker)
+            PaneForgeSyntheticCanaryInput::from_value(long_marker)
                 .expect_err("long marker")
                 .code,
             ErrorCode::InvalidRequest
@@ -1272,12 +1272,12 @@ mod tests {
     #[test]
     fn worker_dispatch_accepts_and_validates_repository_workspace_name() {
         let mut value = valid_worker_dispatch_value();
-        value["repository"]["workspaceName"] = json!("codex-ccpanes-phase7-success");
+        value["repository"]["workspaceName"] = json!("codex-paneforge-phase7-success");
         let input = WorkerDispatchInput::from_value(value).unwrap();
         let repository = input.repository_ref().unwrap();
         assert_eq!(
             repository.workspace_name.as_deref(),
-            Some("codex-ccpanes-phase7-success")
+            Some("codex-paneforge-phase7-success")
         );
 
         let mut invalid = valid_worker_dispatch_value();

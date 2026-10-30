@@ -9,7 +9,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::config::{default_config_path, load_config};
-use crate::discovery::{external_command_path, resolve_ccpanes, resolve_codex};
+use crate::discovery::{external_command_path, resolve_paneforge, resolve_codex};
 use crate::environment::{current_sanitized_keys, sanitize_command};
 use crate::hashing::{hash_file, hash_path};
 use crate::logging::unix_ms;
@@ -85,9 +85,9 @@ pub struct DoctorOptions {
 }
 
 pub fn probe(explicit: Option<&Path>, show_paths: bool) -> Result<ProbeReport> {
-    let target = resolve_ccpanes(explicit)?;
+    let target = resolve_paneforge(explicit)?;
     let metadata = fs::metadata(&target.path)
-        .with_context(|| format!("read CC-Panes metadata ({})", target.source))?;
+        .with_context(|| format!("read PaneForge metadata ({})", target.source))?;
     Ok(ProbeReport {
         schema_version: 1,
         available: true,
@@ -102,11 +102,11 @@ pub fn probe(explicit: Option<&Path>, show_paths: bool) -> Result<ProbeReport> {
 
 pub fn doctor(options: DoctorOptions) -> DoctorReport {
     let mut checks = Vec::new();
-    let mut ccpanes_version = None;
+    let mut paneforge_version = None;
 
     match probe(options.explicit_target.as_deref(), options.show_paths) {
         Ok(report) => {
-            ccpanes_version.clone_from(&report.product_version);
+            paneforge_version.clone_from(&report.product_version);
             let mut details = BTreeMap::new();
             details.insert("source".into(), json!(report.source));
             details.insert("pathHash".into(), json!(report.path_hash));
@@ -119,16 +119,16 @@ pub fn doctor(options: DoctorOptions) -> DoctorReport {
                 details.insert("productVersion".into(), json!(version));
             }
             checks.push(check(
-                "ccpanes_installation",
+                "paneforge_installation",
                 CheckStatus::Pass,
-                "发现官方 CC-Panes 安装",
+                "发现官方 PaneForge 安装",
                 details,
             ));
         }
         Err(error) => checks.push(check(
-            "ccpanes_installation",
+            "paneforge_installation",
             CheckStatus::Fail,
-            format!("未发现可用的官方 CC-Panes：{error:#}"),
+            format!("未发现可用的官方 PaneForge：{error:#}"),
             BTreeMap::new(),
         )),
     }
@@ -193,7 +193,7 @@ pub fn doctor(options: DoctorOptions) -> DoctorReport {
     let environment_message = if inherited.is_empty() {
         "当前父进程没有 Codex Desktop 任务级私有环境"
     } else {
-        "检测到任务级私有环境；Companion 启动 CC-Panes 时会精确移除"
+        "检测到任务级私有环境；Companion 启动 PaneForge 时会精确移除"
     };
     checks.push(check(
         "parent_environment",
@@ -204,9 +204,9 @@ pub fn doctor(options: DoctorOptions) -> DoctorReport {
 
     match process_names() {
         Ok(processes) => {
-            let ccpanes_count = processes
+            let paneforge_count = processes
                 .iter()
-                .filter(|name| name.starts_with("cc-panes"))
+                .filter(|name| name.starts_with("paneforge"))
                 .count();
             let build = processes
                 .iter()
@@ -229,7 +229,7 @@ pub fn doctor(options: DoctorOptions) -> DoctorReport {
                 .cloned()
                 .collect::<Vec<_>>();
             let mut details = BTreeMap::new();
-            details.insert("ccpanesProcessCount".into(), json!(ccpanes_count));
+            details.insert("paneforgeProcessCount".into(), json!(paneforge_count));
             details.insert("buildProcesses".into(), json!(build));
             details.insert("legacyWorkflowProcesses".into(), json!(legacy));
             let status = if build.is_empty() && legacy.is_empty() {
@@ -262,7 +262,7 @@ pub fn doctor(options: DoctorOptions) -> DoctorReport {
 
     checks.push(legacy_mcp_check());
     checks.push(companion_config_check(options.show_paths));
-    checks.push(compatibility_check(ccpanes_version.as_deref()));
+    checks.push(compatibility_check(paneforge_version.as_deref()));
 
     let overall = checks
         .iter()
@@ -304,8 +304,8 @@ fn companion_config_check(show_paths: bool) -> DiagnosticCheck {
             details.insert("schemaVersion".into(), json!(config.schema_version));
             details.insert("source".into(), json!(config.source));
             details.insert(
-                "ccpanesPathHash".into(),
-                json!(hash_path(&config.ccpanes_executable)),
+                "paneforgePathHash".into(),
+                json!(hash_path(&config.paneforge_executable)),
             );
             check(
                 "companion_config",
@@ -341,19 +341,19 @@ fn compatibility_check(version: Option<&str>) -> DiagnosticCheck {
         Some(version_tuple) if version_tuple >= (0, 11, 3) => check(
             "compatibility",
             CheckStatus::Pass,
-            "CC-Panes 版本满足最低建议基线；未来版本不设上限",
+            "PaneForge 版本满足最低建议基线；未来版本不设上限",
             details,
         ),
         Some(_) => check(
             "compatibility",
             CheckStatus::Warn,
-            "CC-Panes 版本低于最低建议基线 0.11.3",
+            "PaneForge 版本低于最低建议基线 0.11.3",
             details,
         ),
         None => check(
             "compatibility",
             CheckStatus::Warn,
-            "没有取得 CC-Panes 产品版本；启动仍按前向兼容策略放行",
+            "没有取得 PaneForge 产品版本；启动仍按前向兼容策略放行",
             details,
         ),
     }
@@ -492,9 +492,9 @@ fn codex_version(path: &Path) -> Result<Option<String>> {
                 "-NoProfile",
                 "-NonInteractive",
                 "-Command",
-                "& $env:CODEX_CCPANES_CODEX_PROBE --version",
+                "& $env:CODEX_PANEFORGE_CODEX_PROBE --version",
             ])
-            .env("CODEX_CCPANES_CODEX_PROBE", &command_path);
+            .env("CODEX_PANEFORGE_CODEX_PROBE", &command_path);
         command
     };
     #[cfg(not(windows))]
@@ -522,9 +522,9 @@ fn windows_product_version(path: &Path) -> Result<Option<String>> {
                 "-NoProfile",
                 "-NonInteractive",
                 "-Command",
-                "$v=(Get-Item -LiteralPath $env:CODEX_CCPANES_VERSION_PROBE).VersionInfo.ProductVersion; if($v){$v}",
+                "$v=(Get-Item -LiteralPath $env:CODEX_PANEFORGE_VERSION_PROBE).VersionInfo.ProductVersion; if($v){$v}",
             ])
-            .env("CODEX_CCPANES_VERSION_PROBE", path)
+            .env("CODEX_PANEFORGE_VERSION_PROBE", path)
             .output()
             .context("probe Windows product version")?;
         if !output.status.success() {

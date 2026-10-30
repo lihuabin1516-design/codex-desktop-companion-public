@@ -8,15 +8,15 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 
 pub const SYNTHETIC_REPOSITORY_CONTRACT_VERSION: &str = "coordination.synthetic-repository/v1beta1";
-pub const SYNTHETIC_REPOSITORY_MARKER_FILE: &str = ".codex-ccpanes-synthetic-repository.json";
-const SYNTHETIC_REPOSITORY_KIND: &str = "codex-ccpanes-phase7-synthetic-repository";
+pub const SYNTHETIC_REPOSITORY_MARKER_FILE: &str = ".codex-paneforge-synthetic-repository.json";
+const SYNTHETIC_REPOSITORY_KIND: &str = "codex-paneforge-phase7-synthetic-repository";
 const GITIGNORE_FILE: &str = ".gitignore";
 const BASELINE_FILE: &str = "baseline.md";
 const TASK_FILE: &str = "tasks/phase7-readme.md";
 const SYNTHETIC_REPOSITORY_GITIGNORE: &str = "\
-# Official CC-Panes synthetic canary runtime metadata.
-/.ccpanes/history/
-/.ccpanes/projects.csv
+# Official PaneForge synthetic canary runtime metadata.
+/.paneforge/history/
+/.paneforge/projects.csv
 /CLAUDE.md
 ";
 
@@ -368,7 +368,7 @@ fn write_synthetic_repository_files(repository_dir: &Path) -> Result<(), Coordin
     )?;
     write_file(
         &repository_dir.join(BASELINE_FILE),
-        "# Codex CC-Panes Phase 7 synthetic repository\n\nbaseline fixture\n",
+        "# Codex PaneForge Phase 7 synthetic repository\n\nbaseline fixture\n",
     )?;
     write_file(
         &repository_dir.join(TASK_FILE),
@@ -407,9 +407,9 @@ fn initialize_git_repository(repository_dir: &Path) -> Result<(), CoordinationEr
         repository_dir,
         &[
             "-c",
-            "user.name=Codex CC-Panes Synthetic Fixture",
+            "user.name=Codex PaneForge Synthetic Fixture",
             "-c",
-            "user.email=codex-ccpanes-synthetic@example.invalid",
+            "user.email=codex-paneforge-synthetic@example.invalid",
             "-c",
             "commit.gpgsign=false",
             "commit",
@@ -547,7 +547,7 @@ mod tests {
     fn phase7_prepares_dedicated_synthetic_git_repository_with_clean_baseline() {
         let parent = tempdir().unwrap();
         let registration =
-            prepare_synthetic_git_repository(parent.path(), "codex-ccpanes-phase7").unwrap();
+            prepare_synthetic_git_repository(parent.path(), "codex-paneforge-phase7").unwrap();
 
         assert_eq!(
             registration.contract_version,
@@ -612,9 +612,9 @@ mod tests {
             &repository_dir,
             &[
                 "-c",
-                "user.name=Codex CC-Panes Synthetic Fixture",
+                "user.name=Codex PaneForge Synthetic Fixture",
                 "-c",
-                "user.email=codex-ccpanes-synthetic@example.invalid",
+                "user.email=codex-paneforge-synthetic@example.invalid",
                 "-c",
                 "commit.gpgsign=false",
                 "commit",
@@ -632,12 +632,12 @@ mod tests {
     }
 
     #[test]
-    fn phase7_synthetic_repository_ignores_ccpanes_history_runtime_metadata() {
+    fn phase7_synthetic_repository_ignores_paneforge_history_runtime_metadata() {
         let parent = tempdir().unwrap();
         let registration =
-            prepare_synthetic_git_repository(parent.path(), "ccpanes-history-metadata").unwrap();
+            prepare_synthetic_git_repository(parent.path(), "paneforge-history-metadata").unwrap();
         let repository_dir = PathBuf::from(&registration.repository.path);
-        let history_dir = repository_dir.join(".ccpanes/history");
+        let history_dir = repository_dir.join(".paneforge/history");
         fs::create_dir_all(&history_dir).unwrap();
         for name in ["history.db", "history.db-shm", "history.db-wal"] {
             fs::write(history_dir.join(name), b"synthetic runtime metadata").unwrap();
@@ -657,21 +657,21 @@ mod tests {
     }
 
     #[test]
-    fn phase7_synthetic_repository_ignores_ccpanes_workspace_setup_metadata() {
+    fn phase7_synthetic_repository_ignores_paneforge_workspace_setup_metadata() {
         let parent = tempdir().unwrap();
         let registration =
-            prepare_synthetic_git_repository(parent.path(), "ccpanes-workspace-metadata").unwrap();
+            prepare_synthetic_git_repository(parent.path(), "paneforge-workspace-metadata").unwrap();
         let repository_dir = PathBuf::from(&registration.repository.path);
-        let ccpanes_dir = repository_dir.join(".ccpanes");
-        fs::create_dir_all(&ccpanes_dir).unwrap();
+        let paneforge_dir = repository_dir.join(".paneforge");
+        fs::create_dir_all(&paneforge_dir).unwrap();
         fs::write(
-            ccpanes_dir.join("projects.csv"),
+            paneforge_dir.join("projects.csv"),
             b"id,name,path\nsynthetic,synthetic,synthetic\n",
         )
         .unwrap();
         fs::write(
             repository_dir.join("CLAUDE.md"),
-            b"# Synthetic CC-Panes workspace notes\n",
+            b"# Synthetic PaneForge workspace notes\n",
         )
         .unwrap();
 

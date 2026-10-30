@@ -16,7 +16,7 @@ use crate::capability::{
     TOOL_LIST_PANES, TOOL_LIST_PROJECTS, TOOL_LIST_SESSIONS, TOOL_LIST_WORKSPACES,
     TOOL_SUBMIT_TO_SESSION, TOOL_WAIT_FOR_SESSION, TOOL_WRITE_TO_SESSION,
 };
-use crate::CCPANES_MCP_PROTOCOL_VERSION;
+use crate::PANEFORGE_MCP_PROTOCOL_VERSION;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FakeResponseMode {
@@ -53,7 +53,7 @@ pub struct FakeSessionSeed {
 }
 
 #[derive(Debug, Clone)]
-pub struct FakeCcpanesBehavior {
+pub struct FakePaneForgeBehavior {
     pub required_authorization: Option<String>,
     pub response_mode: FakeResponseMode,
     pub hang_after_request: bool,
@@ -67,7 +67,7 @@ pub struct FakeCcpanesBehavior {
     pub jsonrpc_errors: BTreeMap<String, FakeJsonRpcError>,
 }
 
-impl Default for FakeCcpanesBehavior {
+impl Default for FakePaneForgeBehavior {
     fn default() -> Self {
         Self {
             required_authorization: None,
@@ -136,15 +136,15 @@ struct FakeState {
     submitted: Vec<(String, String)>,
 }
 
-pub struct FakeCcpanesServer {
+pub struct FakePaneForgeServer {
     endpoint: String,
     stop: Arc<AtomicBool>,
     state: Arc<Mutex<FakeState>>,
     handle: Option<JoinHandle<()>>,
 }
 
-impl FakeCcpanesServer {
-    pub fn start(behavior: FakeCcpanesBehavior) -> std::io::Result<Self> {
+impl FakePaneForgeServer {
+    pub fn start(behavior: FakePaneForgeBehavior) -> std::io::Result<Self> {
         let listener = TcpListener::bind("127.0.0.1:0")?;
         listener.set_nonblocking(false)?;
         let endpoint = format!("http://{}/mcp", listener.local_addr()?);
@@ -201,7 +201,7 @@ impl FakeCcpanesServer {
     }
 }
 
-impl Drop for FakeCcpanesServer {
+impl Drop for FakePaneForgeServer {
     fn drop(&mut self) {
         self.stop.store(true, Ordering::SeqCst);
         let _ = TcpStream::connect(
@@ -217,7 +217,7 @@ impl Drop for FakeCcpanesServer {
 
 fn handle_connection(
     mut stream: TcpStream,
-    behavior: &FakeCcpanesBehavior,
+    behavior: &FakePaneForgeBehavior,
     state: &Arc<Mutex<FakeState>>,
 ) {
     let Ok((headers, body)) = read_http_request(&mut stream) else {
@@ -303,8 +303,8 @@ fn handle_connection(
 
     let result = match method.as_str() {
         "initialize" => json!({
-            "protocolVersion": CCPANES_MCP_PROTOCOL_VERSION,
-            "serverInfo": {"name": "fake-cc-panes", "version": "0.0.0-fake"}
+            "protocolVersion": PANEFORGE_MCP_PROTOCOL_VERSION,
+            "serverInfo": {"name": "fake-paneforge", "version": "0.0.0-fake"}
         }),
         "notifications/initialized" => json!({}),
         "tools/list" => json!({"tools": behavior.tools}),
@@ -320,7 +320,7 @@ fn handle_connection(
 fn handle_tool_call(
     tool_name: Option<&str>,
     arguments: Option<Value>,
-    behavior: &FakeCcpanesBehavior,
+    behavior: &FakePaneForgeBehavior,
     state: &Arc<Mutex<FakeState>>,
 ) -> Value {
     let tool_name = tool_name.unwrap_or_default();
@@ -369,9 +369,9 @@ fn fake_launch(arguments: Value, complete_launches: bool, state: &Arc<Mutex<Fake
         .map(str::to_owned);
     let output = if prompt
         .as_deref()
-        .is_some_and(|prompt| prompt.contains("CCPANES_CANARY_CWD"))
+        .is_some_and(|prompt| prompt.contains("PANEFORGE_CANARY_CWD"))
     {
-        format!("synthetic output for session-{number}\nCCPANES_CANARY_CWD={project_path}")
+        format!("synthetic output for session-{number}\nPANEFORGE_CANARY_CWD={project_path}")
     } else {
         format!("synthetic output for session-{number}")
     };

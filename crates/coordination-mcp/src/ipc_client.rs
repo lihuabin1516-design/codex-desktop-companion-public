@@ -25,18 +25,18 @@ pub struct CoordinatorProcessConfig {
 
 impl CoordinatorProcessConfig {
     pub fn from_env() -> Result<Self, CoordinationError> {
-        let data_dir = env::var_os("CODEX_CCPANES_COORDINATION_DATA_DIR")
+        let data_dir = env::var_os("CODEX_PANEFORGE_COORDINATION_DATA_DIR")
             .map(PathBuf::from)
             .unwrap_or_else(default_data_dir);
-        let database_path = env::var_os("CODEX_CCPANES_COORDINATION_DB")
+        let database_path = env::var_os("CODEX_PANEFORGE_COORDINATION_DB")
             .map(PathBuf::from)
             .unwrap_or_else(|| data_dir.join("coordination.db"));
-        let coordinator_exe = env::var_os("CODEX_CCPANES_COORDINATOR_EXE")
+        let coordinator_exe = env::var_os("CODEX_PANEFORGE_COORDINATOR_EXE")
             .map(PathBuf::from)
             .map(Ok)
             .unwrap_or_else(default_coordinator_exe)?;
-        let ipc_endpoint = env::var("CODEX_CCPANES_COORDINATION_IPC_ENDPOINT")
-            .unwrap_or_else(|_| "codex-ccpanes-coordinator-v1".to_owned());
+        let ipc_endpoint = env::var("CODEX_PANEFORGE_COORDINATION_IPC_ENDPOINT")
+            .unwrap_or_else(|_| "codex-paneforge-coordinator-v1".to_owned());
         Ok(Self {
             coordinator_exe,
             database_path,
@@ -189,7 +189,7 @@ fn default_data_dir() -> PathBuf {
     env::var_os("LOCALAPPDATA")
         .map(PathBuf::from)
         .unwrap_or_else(|| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
-        .join("CodexCCPanes")
+        .join("CodexPaneForge")
         .join("coordination")
 }
 
@@ -201,9 +201,9 @@ fn default_coordinator_exe() -> Result<PathBuf, CoordinationError> {
         )
     })?;
     let binary = if cfg!(windows) {
-        "codex-ccpanes-coordinator.exe"
+        "codex-paneforge-coordinator.exe"
     } else {
-        "codex-ccpanes-coordinator"
+        "codex-paneforge-coordinator"
     };
     Ok(current_exe
         .parent()

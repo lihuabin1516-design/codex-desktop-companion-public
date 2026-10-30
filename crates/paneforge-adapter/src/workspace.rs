@@ -8,14 +8,14 @@ use sha2::{Digest, Sha256};
 
 use crate::types::find_string;
 use crate::{
-    AdapterReadiness, AdapterStatusSnapshot, CcpanesAdapter, SanitizedEndpointConfig,
-    CCPANES_ADAPTER_CONTRACT_VERSION, TOOL_ADD_PROJECT_TO_WORKSPACE, TOOL_CREATE_WORKSPACE,
+    AdapterReadiness, AdapterStatusSnapshot, PaneForgeAdapter, SanitizedEndpointConfig,
+    PANEFORGE_ADAPTER_CONTRACT_VERSION, TOOL_ADD_PROJECT_TO_WORKSPACE, TOOL_CREATE_WORKSPACE,
     TOOL_LAUNCH_TASK, TOOL_LIST_PROJECTS, TOOL_LIST_WORKSPACES,
 };
 
 pub const DEDICATED_WORKSPACE_CONTRACT_VERSION: &str =
-    "ccpanes-adapter-dedicated-workspace/v1beta1";
-pub const DEDICATED_WORKSPACE_NAME_PREFIX: &str = "codex-ccpanes-phase7-";
+    "paneforge-adapter-dedicated-workspace/v1beta1";
+pub const DEDICATED_WORKSPACE_NAME_PREFIX: &str = "codex-paneforge-phase7-";
 const DEDICATED_WORKSPACE_DIGEST_HEX_LEN: usize = 24;
 
 const READ_ONLY_WORKSPACE_OPERATIONS: &[&str] = &[
@@ -114,7 +114,7 @@ pub struct DedicatedProjectSummary {
 }
 
 pub fn run_dedicated_workspace_project_gate(
-    adapter: &mut CcpanesAdapter,
+    adapter: &mut PaneForgeAdapter,
     spec: DedicatedWorkspaceSpec,
 ) -> DedicatedWorkspaceProjectReport {
     let endpoint = adapter.config().sanitized();
@@ -209,7 +209,7 @@ pub fn run_dedicated_workspace_project_gate(
 
     DedicatedWorkspaceProjectReport {
         contract_version: DEDICATED_WORKSPACE_CONTRACT_VERSION.to_owned(),
-        adapter_contract_version: CCPANES_ADAPTER_CONTRACT_VERSION.to_owned(),
+        adapter_contract_version: PANEFORGE_ADAPTER_CONTRACT_VERSION.to_owned(),
         readiness,
         endpoint,
         read_only_operations: read_only_operations(),
@@ -224,7 +224,7 @@ pub fn run_dedicated_workspace_project_gate(
 }
 
 pub fn ensure_dedicated_workspace_project(
-    adapter: &mut CcpanesAdapter,
+    adapter: &mut PaneForgeAdapter,
     spec: DedicatedWorkspaceSpec,
 ) -> DedicatedWorkspaceProjectReport {
     let initial = run_dedicated_workspace_project_gate(adapter, spec.clone());
@@ -336,13 +336,13 @@ fn require_workspace_capabilities(
     if !missing.is_empty() {
         return Err(CoordinationError::new(
             ErrorCode::AdapterIncompatible,
-            format!("CC-Panes workspace/project tools are missing: {missing:?}"),
+            format!("PaneForge workspace/project tools are missing: {missing:?}"),
         ));
     }
     if !tools.contains(TOOL_LAUNCH_TASK) || !launch_task_accepts_workspace_name {
         return Err(CoordinationError::new(
             ErrorCode::AdapterIncompatible,
-            "CC-Panes launch_task must accept workspaceName for dedicated workspace canary",
+            "PaneForge launch_task must accept workspaceName for dedicated workspace canary",
         ));
     }
     Ok(())
@@ -417,7 +417,7 @@ fn report_with_error(
 ) -> DedicatedWorkspaceProjectReport {
     DedicatedWorkspaceProjectReport {
         contract_version: DEDICATED_WORKSPACE_CONTRACT_VERSION.to_owned(),
-        adapter_contract_version: CCPANES_ADAPTER_CONTRACT_VERSION.to_owned(),
+        adapter_contract_version: PANEFORGE_ADAPTER_CONTRACT_VERSION.to_owned(),
         readiness,
         endpoint,
         read_only_operations: read_only_operations(),
@@ -466,7 +466,7 @@ mod tests {
     #[test]
     fn workspace_project_summary_redacts_ids_and_paths() {
         let spec = DedicatedWorkspaceSpec {
-            workspace_name: "codex-ccpanes-phase7-fixture".to_owned(),
+            workspace_name: "codex-paneforge-phase7-fixture".to_owned(),
             project_path: "D:/SYNTHETIC_REPO_PATH".to_owned(),
             project_name: "phase7-project".to_owned(),
         };
@@ -477,7 +477,7 @@ mod tests {
                 "id": "project-secret-id",
                 "name": "phase7-project",
                 "path": "D:\\SYNTHETIC_REPO_PATH",
-                "workspaceName": "codex-ccpanes-phase7-fixture"
+                "workspaceName": "codex-paneforge-phase7-fixture"
             }]}),
         );
 
@@ -501,7 +501,7 @@ mod tests {
         );
 
         let bad_project = DedicatedWorkspaceSpec {
-            workspace_name: "codex-ccpanes-phase7-fixture".to_owned(),
+            workspace_name: "codex-paneforge-phase7-fixture".to_owned(),
             project_path: "relative/project".to_owned(),
             project_name: "project".to_owned(),
         };

@@ -56,14 +56,14 @@ impl AdapterHeader {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct CcpanesEndpointConfig {
+pub struct PaneForgeEndpointConfig {
     pub endpoint: String,
     #[serde(default)]
     pub headers: Vec<AdapterHeader>,
     pub discovery_generation: u64,
 }
 
-impl CcpanesEndpointConfig {
+impl PaneForgeEndpointConfig {
     pub fn new(
         endpoint: impl Into<String>,
         headers: Vec<AdapterHeader>,
@@ -81,7 +81,7 @@ impl CcpanesEndpointConfig {
     pub fn validate(&self) -> Result<(), CoordinationError> {
         if self.endpoint.trim().is_empty() {
             return Err(CoordinationError::invalid_request(
-                "cc-panes MCP endpoint must not be empty",
+                "paneforge MCP endpoint must not be empty",
             ));
         }
         for header in &self.headers {
@@ -270,7 +270,7 @@ mod tests {
     #[test]
     fn sanitized_endpoint_does_not_expose_query_token() {
         let endpoint = format!("http://127.0.0.1:39000/mcp?{}=TOKEN_PLACEHOLDER", "token");
-        let config = CcpanesEndpointConfig::new(
+        let config = PaneForgeEndpointConfig::new(
             endpoint,
             vec![AdapterHeader::new("Authorization", "Bearer TOKEN_PLACEHOLDER").unwrap()],
             3,

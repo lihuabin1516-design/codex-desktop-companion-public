@@ -1,13 +1,13 @@
-//! Coordinator runtime contract for the Codex + CC-Panes Coordination Plane.
+//! Coordinator runtime contract for the Codex + PaneForge Coordination Plane.
 //!
 //! This crate owns Phase 3 runtime semantics: single-instance identity, IPC
 //! health handling, bounded scheduling, capacity/budget admission,
 //! pause/resume/cancel orchestration, structured logs/metrics, and result
 //! aggregation, repository baseline guards, Phase 7 synthetic Git canary
-//! fixtures, and the explicit foreground CC-Panes Adapter execution seam.
+//! fixtures, and the explicit foreground PaneForge Adapter execution seam.
 
 pub mod aggregation;
-pub mod ccpanes_operations;
+pub mod paneforge_operations;
 pub mod config;
 pub mod execution;
 pub mod identity;
@@ -21,7 +21,7 @@ pub mod semaphore;
 pub mod single_instance;
 
 pub use aggregation::*;
-pub use ccpanes_operations::*;
+pub use paneforge_operations::*;
 pub use config::*;
 pub use execution::*;
 pub use identity::*;

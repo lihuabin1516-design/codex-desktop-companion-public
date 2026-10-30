@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 use serde::Serialize;
 use serde_json::json;
 
-use crate::discovery::resolve_ccpanes;
+use crate::discovery::resolve_paneforge;
 use crate::environment::{current_sanitized_keys, sanitize_command};
 use crate::hashing::hash_path;
 use crate::logging::append_event;
@@ -29,7 +29,7 @@ pub struct LaunchReceipt {
 }
 
 pub fn launch(request: LaunchRequest) -> Result<LaunchReceipt> {
-    let target = resolve_ccpanes(request.explicit_target.as_deref())?;
+    let target = resolve_paneforge(request.explicit_target.as_deref())?;
     let removed = current_sanitized_keys();
     let mut command = Command::new(&target.path);
     command.args(&request.arguments);
@@ -45,10 +45,10 @@ pub fn launch(request: LaunchRequest) -> Result<LaunchReceipt> {
 
     let mut child = command
         .spawn()
-        .with_context(|| format!("launch official CC-Panes ({})", target.source))?;
+        .with_context(|| format!("launch official PaneForge ({})", target.source))?;
     let pid = child.id();
     let exit_status = if request.wait {
-        Some(child.wait().context("wait for official CC-Panes")?)
+        Some(child.wait().context("wait for official PaneForge")?)
     } else {
         None
     };
@@ -63,7 +63,7 @@ pub fn launch(request: LaunchRequest) -> Result<LaunchReceipt> {
         exit_code: exit_status.as_ref().and_then(ExitStatus::code),
     };
     let _ = append_event(
-        "ccpanes_launch",
+        "paneforge_launch",
         json!({
             "pid": receipt.pid,
             "targetSource": receipt.target_source,
@@ -77,5 +77,5 @@ pub fn launch(request: LaunchRequest) -> Result<LaunchReceipt> {
 }
 
 pub fn probe_target_path(explicit: Option<&Path>) -> Result<PathBuf> {
-    Ok(resolve_ccpanes(explicit)?.path)
+    Ok(resolve_paneforge(explicit)?.path)
 }

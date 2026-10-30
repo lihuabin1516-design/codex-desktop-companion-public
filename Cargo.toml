@@ -1,10 +1,10 @@
 [package]
-name = "codex-ccpanes"
+name = "codex-paneforge"
 version = "0.1.0-beta.3"
 edition = "2021"
 rust-version = "1.88"
 license = "MIT"
-description = "Update-transparent launcher and diagnostics companion for Codex App and official CC-Panes"
+description = "Update-transparent launcher and diagnostics companion for Codex App and official PaneForge"
 
 [workspace]
 members = [
@@ -13,21 +13,21 @@ members = [
     "crates/coordination-protocol",
     "crates/coordination-store",
     "crates/coordinator",
-    "crates/ccpanes-adapter",
+    "crates/paneforge-adapter",
     "crates/coordination-mcp",
 ]
 resolver = "2"
 
 [lib]
-name = "codex_ccpanes"
+name = "codex_paneforge"
 path = "src/lib.rs"
 
 [[bin]]
-name = "codex-ccpanes"
+name = "codex-paneforge"
 path = "src/main.rs"
 
 [[bin]]
-name = "CodexCCPanes"
+name = "CodexPaneForge"
 path = "src/bin/launcher.rs"
 
 [dependencies]

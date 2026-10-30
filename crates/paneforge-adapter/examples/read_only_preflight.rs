@@ -2,15 +2,15 @@ use std::env;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use ccpanes_adapter::{
-    read_ccpanes_discovery_file, require_dispatch_requalification, run_read_only_preflight,
-    AdapterTimeouts, CcpanesAdapter,
+use paneforge_adapter::{
+    read_paneforge_discovery_file, require_dispatch_requalification, run_read_only_preflight,
+    AdapterTimeouts, PaneForgeAdapter,
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = PreflightArgs::parse()?;
-    let config = read_ccpanes_discovery_file(&args.discovery, args.discovery_generation)?;
-    let mut adapter = CcpanesAdapter::new(
+    let config = read_paneforge_discovery_file(&args.discovery, args.discovery_generation)?;
+    let mut adapter = PaneForgeAdapter::new(
         config,
         AdapterTimeouts::new(
             Duration::from_millis(args.connect_timeout_ms),
@@ -39,7 +39,7 @@ struct PreflightArgs {
 
 impl PreflightArgs {
     fn parse() -> Result<Self, Box<dyn std::error::Error>> {
-        let mut discovery = env::var_os("CODEX_CCPANES_DISCOVERY_FILE").map(PathBuf::from);
+        let mut discovery = env::var_os("CODEX_PANEFORGE_DISCOVERY_FILE").map(PathBuf::from);
         let mut discovery_generation = 1_u64;
         let mut connect_timeout_ms = 2_000_u64;
         let mut request_timeout_ms = 8_000_u64;
@@ -65,7 +65,7 @@ impl PreflightArgs {
         }
         let Some(discovery) = discovery else {
             print_usage();
-            return Err("missing --discovery or CODEX_CCPANES_DISCOVERY_FILE".into());
+            return Err("missing --discovery or CODEX_PANEFORGE_DISCOVERY_FILE".into());
         };
         Ok(Self {
             discovery,
@@ -91,6 +91,6 @@ fn parse_u64(value: Option<String>, name: &'static str) -> Result<u64, Box<dyn s
 
 fn print_usage() {
     eprintln!(
-        "Usage: cargo run -p ccpanes-adapter --example read_only_preflight -- --discovery <cc-panes-mcp-discovery.json>"
+        "Usage: cargo run -p paneforge-adapter --example read_only_preflight -- --discovery <paneforge-mcp-discovery.json>"
     );
 }

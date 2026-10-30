@@ -1,6 +1,5 @@
 {
   "source": {
-    "repository": "wuxiran/cc-pane",
     "tag": "v0.12.3",
     "commit": "7fad08d8a210015eb12af283c720394e7324f471",
     "changelogDate": "2026-08-10",
@@ -9,7 +8,7 @@
   "initializeResult": {
     "protocolVersion": "2025-03-26",
     "serverInfo": {
-      "name": "cc-panes-orchestrator",
+      "name": "paneforge-orchestrator",
       "version": "1.3.0"
     },
     "capabilities": {

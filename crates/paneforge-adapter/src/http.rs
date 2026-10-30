@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use serde_json::Value;
 
-use crate::{AdapterHeader, AdapterTimeouts, CcpanesEndpointConfig};
+use crate::{AdapterHeader, AdapterTimeouts, PaneForgeEndpointConfig};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct HttpResponse {
@@ -62,7 +62,7 @@ pub struct McpHttpClient {
 
 impl McpHttpClient {
     pub fn new(
-        config: &CcpanesEndpointConfig,
+        config: &PaneForgeEndpointConfig,
         timeouts: AdapterTimeouts,
     ) -> Result<Self, HttpTransportFailure> {
         timeouts.validate().map_err(|error| {
@@ -98,7 +98,7 @@ impl McpHttpClient {
                 HttpTransportFailure::new(
                     TransportPhase::Connect,
                     io_error_kind(error.kind()),
-                    format!("connect to CC-Panes MCP endpoint failed: {error}"),
+                    format!("connect to PaneForge MCP endpoint failed: {error}"),
                 )
             })?;
         stream
@@ -142,21 +142,21 @@ impl McpHttpClient {
             HttpTransportFailure::new(
                 TransportPhase::Response,
                 io_error_kind(error.kind()),
-                format!("write CC-Panes MCP request failed: {error}"),
+                format!("write PaneForge MCP request failed: {error}"),
             )
         })?;
         stream.write_all(body.as_bytes()).map_err(|error| {
             HttpTransportFailure::new(
                 TransportPhase::Response,
                 io_error_kind(error.kind()),
-                format!("write CC-Panes MCP body failed: {error}"),
+                format!("write PaneForge MCP body failed: {error}"),
             )
         })?;
         stream.flush().map_err(|error| {
             HttpTransportFailure::new(
                 TransportPhase::Response,
                 io_error_kind(error.kind()),
-                format!("flush CC-Panes MCP request failed: {error}"),
+                format!("flush PaneForge MCP request failed: {error}"),
             )
         })?;
 
@@ -165,7 +165,7 @@ impl McpHttpClient {
             HttpTransportFailure::new(
                 TransportPhase::Response,
                 io_error_kind(error.kind()),
-                format!("read CC-Panes MCP response failed: {error}"),
+                format!("read PaneForge MCP response failed: {error}"),
             )
         })?;
         parse_http_response(&response)
@@ -188,7 +188,7 @@ impl ParsedHttpEndpoint {
                 HttpTransportFailure::new(
                     TransportPhase::Connect,
                     io_error_kind(error.kind()),
-                    format!("resolve CC-Panes MCP endpoint failed: {error}"),
+                    format!("resolve PaneForge MCP endpoint failed: {error}"),
                 )
             })?;
         addrs.next().ok_or_else(|| {
@@ -199,7 +199,7 @@ impl ParsedHttpEndpoint {
                 } else {
                     TransportFailureKind::Connection
                 },
-                "CC-Panes MCP endpoint resolved to no address",
+                "PaneForge MCP endpoint resolved to no address",
             )
         })
     }
@@ -213,7 +213,7 @@ pub fn parse_loopback_http_endpoint(
         return Err(HttpTransportFailure::new(
             TransportPhase::Connect,
             TransportFailureKind::InvalidEndpoint,
-            "CC-Panes MCP endpoint must use http:// loopback",
+            "PaneForge MCP endpoint must use http:// loopback",
         ));
     };
     let (authority, path) = rest
@@ -255,7 +255,7 @@ pub fn parse_loopback_http_endpoint(
         return Err(HttpTransportFailure::new(
             TransportPhase::Connect,
             TransportFailureKind::InvalidEndpoint,
-            "CC-Panes MCP endpoint must be loopback",
+            "PaneForge MCP endpoint must be loopback",
         ));
     }
     let host_header = if authority.is_empty() {
@@ -276,14 +276,14 @@ pub fn parse_http_response(bytes: &[u8]) -> Result<HttpResponse, HttpTransportFa
         HttpTransportFailure::new(
             TransportPhase::Response,
             TransportFailureKind::InvalidResponse,
-            format!("CC-Panes MCP response was not UTF-8: {error}"),
+            format!("PaneForge MCP response was not UTF-8: {error}"),
         )
     })?;
     let (head, body) = text.split_once("\r\n\r\n").ok_or_else(|| {
         HttpTransportFailure::new(
             TransportPhase::Response,
             TransportFailureKind::InvalidResponse,
-            "CC-Panes MCP response did not contain HTTP headers",
+            "PaneForge MCP response did not contain HTTP headers",
         )
     })?;
     let mut lines = head.lines();
@@ -291,7 +291,7 @@ pub fn parse_http_response(bytes: &[u8]) -> Result<HttpResponse, HttpTransportFa
         HttpTransportFailure::new(
             TransportPhase::Response,
             TransportFailureKind::InvalidResponse,
-            "CC-Panes MCP response omitted status line",
+            "PaneForge MCP response omitted status line",
         )
     })?;
     let mut parts = status_line.split_whitespace();
@@ -303,7 +303,7 @@ pub fn parse_http_response(bytes: &[u8]) -> Result<HttpResponse, HttpTransportFa
             HttpTransportFailure::new(
                 TransportPhase::Response,
                 TransportFailureKind::InvalidResponse,
-                "CC-Panes MCP response status code is invalid",
+                "PaneForge MCP response status code is invalid",
             )
         })?;
     let mut headers = BTreeMap::new();
@@ -341,7 +341,7 @@ mod tests {
         assert!(parse_loopback_http_endpoint("http://localhost:38885/mcp").is_ok());
         assert!(parse_loopback_http_endpoint("http://[::1]:38885/mcp").is_ok());
         assert_eq!(
-            parse_loopback_http_endpoint("https://cc-panes.example.test/mcp")
+            parse_loopback_http_endpoint("https://paneforge.example.test/mcp")
                 .expect_err("not loopback")
                 .kind,
             TransportFailureKind::InvalidEndpoint

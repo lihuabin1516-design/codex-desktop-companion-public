@@ -16,8 +16,8 @@
 
 ### Added
 
-- 独立 `codex-ccpanes.exe` CLI 和无控制台 `CodexCCPanes.exe` GUI launcher；
-- 官方 CC-Panes 多来源自动发现；
+- 独立 `codex-paneforge.exe` CLI 和无控制台 `CodexPaneForge.exe` GUI launcher；
+- 官方 PaneForge 多来源自动发现；
 - Codex Desktop 任务级私有环境变量清理；
 - `describe`、`probe`、`doctor`、`audit-builds` 和 `migrate-config`；
 - JSONL 日志轮转；
@@ -28,7 +28,7 @@
 ### Verified
 
 - Codex CLI `0.146.0`；
-- CC-Panes 从 `0.11.10` 自动升级到 `0.11.11` 后透明兼容；
+- PaneForge 从 `0.11.10` 自动升级到 `0.11.11` 后透明兼容；
 - Console 与 GUI 两条子进程环境隔离链；
 - 隔离安装、配置迁移、同版本重装与卸载；
 - 真实安装升级保留上一版本目录。

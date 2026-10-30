@@ -5,15 +5,15 @@ use std::process;
 
 use anyhow::{Context, Result};
 use clap::{Args, Parser, Subcommand};
-use codex_ccpanes::audit::{audit_builds, BuildAuditReport};
-use codex_ccpanes::config::{migrate, MigrationReport, MigrationRequest};
-use codex_ccpanes::diagnostics::{doctor, probe, DoctorOptions, DoctorReport, ProbeReport};
-use codex_ccpanes::launcher::{launch, LaunchRequest};
-use codex_ccpanes::{descriptor, PRODUCT_NAME};
+use codex_paneforge::audit::{audit_builds, BuildAuditReport};
+use codex_paneforge::config::{migrate, MigrationReport, MigrationRequest};
+use codex_paneforge::diagnostics::{doctor, probe, DoctorOptions, DoctorReport, ProbeReport};
+use codex_paneforge::launcher::{launch, LaunchRequest};
+use codex_paneforge::{descriptor, PRODUCT_NAME};
 use serde::Serialize;
 
 #[derive(Debug, Parser)]
-#[command(name = "codex-ccpanes", version, about = PRODUCT_NAME)]
+#[command(name = "codex-paneforge", version, about = PRODUCT_NAME)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Commands>,
@@ -21,11 +21,11 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// Safely launch the installed official CC-Panes.
+    /// Safely launch the installed official PaneForge.
     Start(StartArgs),
-    /// Run production health checks without changing Codex or CC-Panes data.
+    /// Run production health checks without changing Codex or PaneForge data.
     Doctor(DoctorArgs),
-    /// Probe the installed official CC-Panes executable.
+    /// Probe the installed official PaneForge executable.
     Probe(ProbeArgs),
     /// Read-only scan for Rust target directories.
     AuditBuilds(AuditArgs),
@@ -38,7 +38,7 @@ enum Commands {
 #[derive(Debug, Args)]
 struct StartArgs {
     #[arg(long)]
-    ccpanes_bin: Option<PathBuf>,
+    paneforge_bin: Option<PathBuf>,
     #[arg(long)]
     wait: bool,
     #[arg(long)]
@@ -50,7 +50,7 @@ struct StartArgs {
 #[derive(Debug, Args)]
 struct DoctorArgs {
     #[arg(long)]
-    ccpanes_bin: Option<PathBuf>,
+    paneforge_bin: Option<PathBuf>,
     #[arg(long)]
     json: bool,
     #[arg(long)]
@@ -62,7 +62,7 @@ struct DoctorArgs {
 #[derive(Debug, Args)]
 struct ProbeArgs {
     #[arg(long)]
-    ccpanes_bin: Option<PathBuf>,
+    paneforge_bin: Option<PathBuf>,
     #[arg(long)]
     json: bool,
     #[arg(long)]
@@ -89,7 +89,7 @@ struct AuditArgs {
 #[derive(Debug, Args)]
 struct MigrateArgs {
     #[arg(long)]
-    ccpanes_bin: Option<PathBuf>,
+    paneforge_bin: Option<PathBuf>,
     #[arg(long = "from")]
     legacy_config: Option<PathBuf>,
     #[arg(long)]
@@ -116,7 +116,7 @@ fn main() {
     match execute() {
         Ok(code) => process::exit(code),
         Err(error) => {
-            eprintln!("codex-ccpanes error: {error:#}");
+            eprintln!("codex-paneforge error: {error:#}");
             process::exit(2);
         }
     }
@@ -126,7 +126,7 @@ fn execute() -> Result<i32> {
     let cli = Cli::parse();
     match cli.command.unwrap_or_else(|| {
         Commands::Start(StartArgs {
-            ccpanes_bin: None,
+            paneforge_bin: None,
             wait: false,
             json: false,
             arguments: Vec::new(),
@@ -134,7 +134,7 @@ fn execute() -> Result<i32> {
     }) {
         Commands::Start(args) => {
             let receipt = launch(LaunchRequest {
-                explicit_target: args.ccpanes_bin,
+                explicit_target: args.paneforge_bin,
                 arguments: args.arguments,
                 wait: args.wait,
             })?;
@@ -142,7 +142,7 @@ fn execute() -> Result<i32> {
                 println!("{}", serde_json::to_string_pretty(&receipt)?);
             } else {
                 println!(
-                    "started official CC-Panes pid={} source={} sanitized={}",
+                    "started official PaneForge pid={} source={} sanitized={}",
                     receipt.pid,
                     receipt.target_source,
                     receipt.removed_environment_keys.len()
@@ -152,7 +152,7 @@ fn execute() -> Result<i32> {
         }
         Commands::Doctor(args) => {
             let report = doctor(DoctorOptions {
-                explicit_target: args.ccpanes_bin,
+                explicit_target: args.paneforge_bin,
                 show_paths: args.show_paths,
             });
             emit_report(
@@ -164,7 +164,7 @@ fn execute() -> Result<i32> {
             Ok(report.exit_code())
         }
         Commands::Probe(args) => {
-            let report = probe(args.ccpanes_bin.as_deref(), args.show_paths)?;
+            let report = probe(args.paneforge_bin.as_deref(), args.show_paths)?;
             emit_report(
                 &report,
                 args.json,
@@ -194,7 +194,7 @@ fn execute() -> Result<i32> {
         }
         Commands::MigrateConfig(args) => {
             let report = migrate(MigrationRequest {
-                explicit_target: args.ccpanes_bin,
+                explicit_target: args.paneforge_bin,
                 legacy_config: args.legacy_config,
                 target_config: args.config,
                 apply: args.apply,
@@ -268,7 +268,7 @@ fn atomic_write(path: &Path, bytes: &[u8]) -> Result<()> {
 }
 
 fn human_doctor(report: &DoctorReport) -> String {
-    let mut lines = vec![format!("Codex + CC-Panes doctor: {:?}", report.overall)];
+    let mut lines = vec![format!("Codex + PaneForge doctor: {:?}", report.overall)];
     for item in &report.checks {
         lines.push(format!("- {:?} {}: {}", item.status, item.id, item.message));
     }
@@ -277,7 +277,7 @@ fn human_doctor(report: &DoctorReport) -> String {
 
 fn human_probe(report: &ProbeReport) -> String {
     format!(
-        "CC-Panes available={} source={} version={} bytes={} sha256={}",
+        "PaneForge available={} source={} version={} bytes={} sha256={}",
         report.available,
         report.source,
         report.product_version.as_deref().unwrap_or("unknown"),

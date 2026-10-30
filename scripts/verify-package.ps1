@@ -10,12 +10,12 @@ $ErrorActionPreference = "Stop"
 $PackageRoot = [System.IO.Path]::GetFullPath($PackageRoot)
 $PackageVersion = (Get-Content -LiteralPath (Join-Path $PackageRoot "VERSION") -Raw).Trim()
 $ComponentBinaries = @(
-    "CodexCCPanes.exe",
-    "codex-ccpanes-coordinator.exe",
-    "codex-ccpanes-mcp.exe"
+    "CodexPaneForge.exe",
+    "codex-paneforge-coordinator.exe",
+    "codex-paneforge-mcp.exe"
 )
 $SupportBinaries = @(
-    "codex-ccpanes.exe"
+    "codex-paneforge.exe"
 )
 $PackagedBinaries = @($SupportBinaries + $ComponentBinaries)
 
@@ -42,17 +42,17 @@ function Convert-ToRelativePath {
 }
 
 foreach ($required in @(
-    "codex-ccpanes.exe",
-    "CodexCCPanes.exe",
-    "codex-ccpanes-coordinator.exe",
-    "codex-ccpanes-mcp.exe",
+    "codex-paneforge.exe",
+    "CodexPaneForge.exe",
+    "codex-paneforge-coordinator.exe",
+    "codex-paneforge-mcp.exe",
     "Configure-CodexMcp.ps1",
     "Manage-Coordinator.ps1",
     "Test-ExternalWindowsAcceptance.ps1",
-    "Install-CodexCCPanes.ps1",
-    "Install-CodexCCPanes.cmd",
-    "Uninstall-CodexCCPanes.ps1",
-    "Uninstall-CodexCCPanes.cmd",
+    "Install-CodexPaneForge.ps1",
+    "Install-CodexPaneForge.cmd",
+    "Uninstall-CodexPaneForge.ps1",
+    "Uninstall-CodexPaneForge.cmd",
     "ARTIFACT_MANIFEST.json",
     "DEPENDENCIES.json",
     "THIRD_PARTY_LICENSES\MANIFEST.json",
@@ -84,7 +84,7 @@ foreach ($binary in $PackagedBinaries) {
 $artifactManifest = Get-Content -LiteralPath (Join-Path $PackageRoot "ARTIFACT_MANIFEST.json") -Raw |
     ConvertFrom-Json
 if ($artifactManifest.schemaVersion -ne 1 -or
-    $artifactManifest.product -ne "CodexCCPanesCompanion" -or
+    $artifactManifest.product -ne "CodexPaneForgeCompanion" -or
     $artifactManifest.artifactKind -ne "coordination-plane-package" -or
     $artifactManifest.productVersion -ne $PackageVersion) {
     throw "Artifact manifest header is invalid."
@@ -100,7 +100,7 @@ if (($manifestSupport -join "`n") -ne ($expectedSupport -join "`n")) {
     throw "Artifact manifest support executable inventory is invalid."
 }
 if ($artifactManifest.sideEffectBoundary.managesOfficialCodex -ne $false -or
-    $artifactManifest.sideEffectBoundary.managesOfficialCcPanes -ne $false -or
+    $artifactManifest.sideEffectBoundary.managesOfficialPaneForge -ne $false -or
     $artifactManifest.sideEffectBoundary.registersUserMcp -ne $false -or
     $artifactManifest.sideEffectBoundary.startsBackgroundCoordinator -ne $false -or
     $artifactManifest.sideEffectBoundary.checksumCoversPackagePayload -ne $true -or
@@ -296,7 +296,7 @@ foreach ($entry in $expected.GetEnumerator()) {
     }
 }
 
-$descriptorJson = & (Join-Path $PackageRoot "codex-ccpanes.exe") describe --json
+$descriptorJson = & (Join-Path $PackageRoot "codex-paneforge.exe") describe --json
 if ($LASTEXITCODE -ne 0) {
     throw "Packaged descriptor command failed with exit code $LASTEXITCODE"
 }
@@ -308,16 +308,16 @@ if ($descriptor.upstreamPolicy -ne "official-external-binaries") {
     throw "Unexpected upstream policy."
 }
 
-$coordinatorVersion = & (Join-Path $PackageRoot "codex-ccpanes-coordinator.exe") --version
-if ($LASTEXITCODE -ne 0 -or $coordinatorVersion -notmatch '^codex-ccpanes-coordinator\s+') {
+$coordinatorVersion = & (Join-Path $PackageRoot "codex-paneforge-coordinator.exe") --version
+if ($LASTEXITCODE -ne 0 -or $coordinatorVersion -notmatch '^codex-paneforge-coordinator\s+') {
     throw "Coordinator packaged version contract failed."
 }
-$mcpDescriptorJson = & (Join-Path $PackageRoot "codex-ccpanes-mcp.exe") --describe
+$mcpDescriptorJson = & (Join-Path $PackageRoot "codex-paneforge-mcp.exe") --describe
 if ($LASTEXITCODE -ne 0) {
     throw "MCP packaged descriptor command failed with exit code $LASTEXITCODE"
 }
 $mcpDescriptor = $mcpDescriptorJson | ConvertFrom-Json
-if ($mcpDescriptor.name -ne "codex-ccpanes-mcp" -or
+if ($mcpDescriptor.name -ne "codex-paneforge-mcp" -or
     [string]::IsNullOrWhiteSpace($mcpDescriptor.mcpSchemaVersion) -or
     [string]::IsNullOrWhiteSpace($mcpDescriptor.ipcSchemaVersion)) {
     throw "MCP packaged descriptor contract failed."

@@ -1,7 +1,7 @@
 use std::thread;
 use std::time::{Duration, Instant};
 
-use ccpanes_adapter::{CapabilitySnapshot, CcpanesAdapter};
+use paneforge_adapter::{CapabilitySnapshot, PaneForgeAdapter};
 use coordination_core::{
     CoordinationError, ErrorCode, OutboxState, ResultAggregationState, WorkerState, WorkflowState,
 };
@@ -13,16 +13,16 @@ use sha2::{Digest, Sha256};
 
 use crate::CoordinatorRuntime;
 
-pub const CCPANES_REAL_CANARY_CONTRACT_VERSION: &str = "coordination.ccpanes-real-canary/v1beta1";
+pub const PANEFORGE_REAL_CANARY_CONTRACT_VERSION: &str = "coordination.paneforge-real-canary/v1beta1";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CcpanesCanaryPolicy {
+pub struct PaneForgeCanaryPolicy {
     pub expected_marker: String,
     pub timeout: Duration,
     pub poll_interval: Duration,
 }
 
-impl CcpanesCanaryPolicy {
+impl PaneForgeCanaryPolicy {
     fn validate(&self) -> Result<(), CoordinationError> {
         if self.expected_marker.trim().is_empty() {
             return Err(CoordinationError::invalid_request(
@@ -40,7 +40,7 @@ impl CcpanesCanaryPolicy {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct CcpanesCanaryReport {
+pub struct PaneForgeCanaryReport {
     pub contract_version: String,
     pub capability_readiness: String,
     pub dispatch_ready: bool,
@@ -71,18 +71,18 @@ pub struct CcpanesCanaryReport {
 }
 
 impl CoordinatorRuntime {
-    pub fn run_next_ccpanes_canary(
+    pub fn run_next_paneforge_canary(
         &mut self,
-        adapter: &mut CcpanesAdapter,
+        adapter: &mut PaneForgeAdapter,
         capability: &CapabilitySnapshot,
-        policy: CcpanesCanaryPolicy,
+        policy: PaneForgeCanaryPolicy,
         now_ms: i64,
-    ) -> Result<Option<CcpanesCanaryReport>, CoordinationError> {
+    ) -> Result<Option<PaneForgeCanaryReport>, CoordinationError> {
         policy.validate()?;
         if !capability.dispatch_ready {
             return Err(CoordinationError::new(
                 ErrorCode::AdapterIncompatible,
-                "CC-Panes dispatch capability is not ready",
+                "PaneForge dispatch capability is not ready",
             ));
         }
 
@@ -134,7 +134,7 @@ impl CoordinatorRuntime {
                         &outbox_id,
                         outbox_revision,
                         &error.message,
-                        "ccpanes-real-canary-dispatch-unknown",
+                        "paneforge-real-canary-dispatch-unknown",
                     )?;
                 }
                 return Err(error);
@@ -154,7 +154,7 @@ impl CoordinatorRuntime {
                     &outbox_id,
                     outbox_revision,
                     &error.message,
-                    "ccpanes-real-canary-launch-response-unknown",
+                    "paneforge-real-canary-launch-response-unknown",
                 )?;
                 return Err(error);
             }
@@ -166,21 +166,21 @@ impl CoordinatorRuntime {
                 expected_generation: outbox_generation,
                 external_task_ref: Some(task_id.clone()),
                 external_session_ref: session_id.clone(),
-                correlation_id: "ccpanes-real-canary-launch".to_owned(),
+                correlation_id: "paneforge-real-canary-launch".to_owned(),
             })?;
         let dispatching = self.store().worker(&worker_id)?;
         self.store_mut().transition_worker_state(
             &worker_id,
             dispatching.revision,
             WorkerState::Running,
-            "ccpanes-real-canary-running",
+            "paneforge-real-canary-running",
         )?;
         self.store_mut().transition_outbox_state(
             &outbox_id,
             outbox_revision,
             OutboxState::Acknowledged,
             None,
-            "ccpanes-real-canary-launch-ack",
+            "paneforge-real-canary-launch-ack",
         )?;
 
         let started = Instant::now();
@@ -206,7 +206,7 @@ impl CoordinatorRuntime {
                 return Err(CoordinationError::new(
                     ErrorCode::ResultPending,
                     format!(
-                        "CC-Panes canary did not observe marker plus accepted final status within {} ms",
+                        "PaneForge canary did not observe marker plus accepted final status within {} ms",
                         policy.timeout.as_millis()
                     ),
                 ));
@@ -223,7 +223,7 @@ impl CoordinatorRuntime {
                 &worker_id,
                 running.revision,
                 WorkerState::Failed,
-                "ccpanes-real-canary-cwd-mismatch",
+                "paneforge-real-canary-cwd-mismatch",
             )?;
             let output_digest = digest(&output);
             self.store_mut()
@@ -241,7 +241,7 @@ impl CoordinatorRuntime {
             self.advance_workflow(&workflow_id, now_ms)?;
             return Err(CoordinationError::new(
                 ErrorCode::AdapterIncompatible,
-                "CC-Panes canary cwd marker did not match target projectPath",
+                "PaneForge canary cwd marker did not match target projectPath",
             )
             .with_current_state(if cwd_observed.is_some() {
                 "CWD_MISMATCH"
@@ -255,7 +255,7 @@ impl CoordinatorRuntime {
             &worker_id,
             running.revision,
             WorkerState::Succeeded,
-            "ccpanes-real-canary-succeeded",
+            "paneforge-real-canary-succeeded",
         )?;
         let output_digest = digest(&output);
         self.store_mut()
@@ -281,8 +281,8 @@ impl CoordinatorRuntime {
         let workflow = self.store().workflow(&workflow_id)?;
         let result = self.aggregate_workflow_result(&workflow_id)?;
 
-        Ok(Some(CcpanesCanaryReport {
-            contract_version: CCPANES_REAL_CANARY_CONTRACT_VERSION.to_owned(),
+        Ok(Some(PaneForgeCanaryReport {
+            contract_version: PANEFORGE_REAL_CANARY_CONTRACT_VERSION.to_owned(),
             capability_readiness: format!("{:?}", capability.readiness).to_ascii_uppercase(),
             dispatch_ready: capability.dispatch_ready,
             source_workspace_name,
@@ -320,7 +320,7 @@ fn require_launch_ref(
         .ok_or_else(|| {
             CoordinationError::new(
                 ErrorCode::DispatchResultUnknown,
-                format!("CC-Panes launch_task response is missing {field}"),
+                format!("PaneForge launch_task response is missing {field}"),
             )
         })
 }
@@ -342,7 +342,7 @@ fn required_payload_string<'a>(
 }
 
 fn extract_cwd_marker(output: &str) -> Option<String> {
-    const PREFIX: &str = "CCPANES_CANARY_CWD=";
+    const PREFIX: &str = "PANEFORGE_CANARY_CWD=";
     let lines = output.lines().collect::<Vec<_>>();
     let mut observed = None;
     for (index, line) in lines.iter().enumerate() {
@@ -374,7 +374,7 @@ fn is_observed_cwd_marker(value: &str) -> bool {
 fn looks_like_wrapped_path_continuation(value: &str) -> bool {
     !value.is_empty()
         && !matches!(value.chars().next(), Some('•' | '›' | '╭' | '╰' | '│'))
-        && !value.contains("CCPANES_CANARY_CWD=")
+        && !value.contains("PANEFORGE_CANARY_CWD=")
         && (value.contains('\\') || value.contains('/'))
 }
 
@@ -404,9 +404,9 @@ mod tests {
     #[test]
     fn cwd_marker_parser_uses_worker_answer_not_echoed_prompt_placeholder() {
         let output = "\
-CCPANES_CANARY_CWD=<当前工作目录完整路径>；不要复述原 challenge。
+PANEFORGE_CANARY_CWD=<当前工作目录完整路径>；不要复述原 challenge。
 other terminal echo
-CCPANES_CANARY_CWD=C:\\Temp\\synthetic-project
+PANEFORGE_CANARY_CWD=C:\\Temp\\synthetic-project
 ";
 
         assert_eq!(
@@ -418,9 +418,9 @@ CCPANES_CANARY_CWD=C:\\Temp\\synthetic-project
     #[test]
     fn cwd_marker_parser_ignores_prompt_placeholder_when_worker_answer_is_missing() {
         let output = "\
-第二行格式为 CCPANES_CANARY_CWD=<当前工作目录完整路径>；不要复述原 challenge。
+第二行格式为 PANEFORGE_CANARY_CWD=<当前工作目录完整路径>；不要复述原 challenge。
 challenge:
-CCPANES_CWD_ROUTE_20260811
+PANEFORGE_CWD_ROUTE_20260811
 ";
 
         assert_eq!(extract_cwd_marker(output), None);
@@ -430,7 +430,7 @@ CCPANES_CWD_ROUTE_20260811
     fn cwd_marker_parser_reassembles_terminal_wrapped_path() {
         let output = "\
 • reversed-marker
-  CCPANES_CANARY_CWD=C:\\Temp\\codex-ccpanes-real-cwd-
+  PANEFORGE_CANARY_CWD=C:\\Temp\\codex-paneforge-real-cwd-
   canary-20260811171002\\real-cwd-route-project
 
 • hook
@@ -438,7 +438,7 @@ CCPANES_CWD_ROUTE_20260811
 
         assert_eq!(
             extract_cwd_marker(output).as_deref(),
-            Some("C:\\Temp\\codex-ccpanes-real-cwd-canary-20260811171002\\real-cwd-route-project")
+            Some("C:\\Temp\\codex-paneforge-real-cwd-canary-20260811171002\\real-cwd-route-project")
         );
     }
 }

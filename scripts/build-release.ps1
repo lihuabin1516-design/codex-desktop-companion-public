@@ -3,7 +3,7 @@ param(
     [string]$CargoTargetDir = $env:CARGO_TARGET_DIR,
     [string]$OutputRoot,
     [string]$SignToolPath = $env:SIGNTOOL_PATH,
-    [string]$CertificateThumbprint = $env:CODEX_CCPANES_SIGNING_CERT_THUMBPRINT,
+    [string]$CertificateThumbprint = $env:CODEX_PANEFORGE_SIGNING_CERT_THUMBPRINT,
     [string]$TimestampUrl = "http://timestamp.digicert.com",
     [switch]$RequireSignature
 )
@@ -13,7 +13,7 @@ $ErrorActionPreference = "Stop"
 
 $ProductRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
 if ([string]::IsNullOrWhiteSpace($CargoTargetDir)) {
-    $CargoTargetDir = Join-Path ([System.IO.Path]::GetTempPath()) "codex-ccpanes-cargo-target"
+    $CargoTargetDir = Join-Path ([System.IO.Path]::GetTempPath()) "codex-paneforge-cargo-target"
 }
 $CargoTargetDir = [System.IO.Path]::GetFullPath($CargoTargetDir)
 if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
@@ -27,21 +27,21 @@ if ($LASTEXITCODE -ne 0) {
     throw "cargo metadata failed with exit code $LASTEXITCODE"
 }
 $metadata = $metadataJson | ConvertFrom-Json
-$package = $metadata.packages | Where-Object { $_.name -eq "codex-ccpanes" } | Select-Object -First 1
+$package = $metadata.packages | Where-Object { $_.name -eq "codex-paneforge" } | Select-Object -First 1
 if ($null -eq $package) {
-    throw "codex-ccpanes package metadata not found"
+    throw "codex-paneforge package metadata not found"
 }
 $Version = $package.version
-$PackageName = "CodexCCPanes-$Version-win-x64"
+$PackageName = "CodexPaneForge-$Version-win-x64"
 $PackageRoot = Join-Path $OutputRoot $PackageName
 $ZipPath = Join-Path $OutputRoot "$PackageName.zip"
 $ComponentBinaries = @(
-    "CodexCCPanes.exe",
-    "codex-ccpanes-coordinator.exe",
-    "codex-ccpanes-mcp.exe"
+    "CodexPaneForge.exe",
+    "codex-paneforge-coordinator.exe",
+    "codex-paneforge-mcp.exe"
 )
 $SupportBinaries = @(
-    "codex-ccpanes.exe"
+    "codex-paneforge.exe"
 )
 $PackagedBinaries = @($SupportBinaries + $ComponentBinaries)
 
@@ -163,10 +163,10 @@ foreach ($file in @(
     "Configure-CodexMcp.ps1",
     "Manage-Coordinator.ps1",
     "Test-ExternalWindowsAcceptance.ps1",
-    "Install-CodexCCPanes.ps1",
-    "Install-CodexCCPanes.cmd",
-    "Uninstall-CodexCCPanes.ps1",
-    "Uninstall-CodexCCPanes.cmd"
+    "Install-CodexPaneForge.ps1",
+    "Install-CodexPaneForge.cmd",
+    "Uninstall-CodexPaneForge.ps1",
+    "Uninstall-CodexPaneForge.cmd"
 )) {
     Copy-Item -LiteralPath (Join-Path $ProductRoot "packaging\$file") `
         -Destination (Join-Path $PackageRoot $file)
@@ -183,22 +183,22 @@ Set-Content -LiteralPath (Join-Path $PackageRoot "VERSION") -Value $Version -Enc
 
 $artifactManifest = [ordered]@{
     schemaVersion = 1
-    product = "CodexCCPanesCompanion"
+    product = "CodexPaneForgeCompanion"
     productVersion = $Version
     artifactKind = "coordination-plane-package"
     componentExecutables = @(
         [ordered]@{
-            name = "CodexCCPanes.exe"
+            name = "CodexPaneForge.exe"
             role = "launcher"
-            owns = @("official-cc-panes-discovery", "codex-desktop-environment-isolation")
+            owns = @("official-paneforge-discovery", "codex-desktop-environment-isolation")
         },
         [ordered]@{
-            name = "codex-ccpanes-coordinator.exe"
+            name = "codex-paneforge-coordinator.exe"
             role = "coordinator"
             owns = @("workflow-state", "worker-state", "outbox", "lease", "event", "budget", "result")
         },
         [ordered]@{
-            name = "codex-ccpanes-mcp.exe"
+            name = "codex-paneforge-mcp.exe"
             role = "mcp-stdio"
             owns = @("mcp-tool-boundary", "input-validation", "local-ipc-client")
         }
@@ -206,7 +206,7 @@ $artifactManifest = [ordered]@{
     supportExecutables = $SupportBinaries
     sideEffectBoundary = [ordered]@{
         managesOfficialCodex = $false
-        managesOfficialCcPanes = $false
+        managesOfficialPaneForge = $false
         registersUserMcp = $false
         startsBackgroundCoordinator = $false
         checksumCoversPackagePayload = $true
@@ -276,7 +276,7 @@ $dependencies = @(
 )
 $dependenciesManifest = [ordered]@{
     schemaVersion = 1
-    generatedFor = "CodexCCPanesCompanion"
+    generatedFor = "CodexPaneForgeCompanion"
     productVersion = $Version
     dependencies = $dependencies
 }
@@ -355,7 +355,7 @@ foreach ($dependency in $externalPackages) {
 }
 $licenseManifest = [ordered]@{
     schemaVersion = 1
-    generatedFor = "CodexCCPanesCompanion"
+    generatedFor = "CodexPaneForgeCompanion"
     productVersion = $Version
     packages = $licensePackages
 }
@@ -374,7 +374,7 @@ $checksumLines | Set-Content -LiteralPath (Join-Path $PackageRoot "SHA256SUMS") 
 Compress-Archive -LiteralPath $PackageRoot -DestinationPath $ZipPath -CompressionLevel Optimal
 $artifact = [ordered]@{
     schemaVersion = 1
-    product = "CodexCCPanesCompanion"
+    product = "CodexPaneForgeCompanion"
     version = $Version
     packageDirectory = $PackageRoot
     zip = $ZipPath

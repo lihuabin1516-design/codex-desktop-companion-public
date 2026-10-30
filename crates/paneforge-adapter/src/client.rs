@@ -12,8 +12,8 @@ use crate::redact::compact_safe_message;
 use crate::types::{find_string, safe_adapter_error};
 use crate::{
     AdapterReadiness, AdapterStatusSnapshot, AdapterTimeouts, CapabilitySnapshot,
-    CcpanesEndpointConfig, DiscoveredSessionBinding, KillSessionOutcome, LaunchTaskResult,
-    SessionSnapshot, CCPANES_ADAPTER_CONTRACT_VERSION, CCPANES_MCP_PROTOCOL_VERSION,
+    PaneForgeEndpointConfig, DiscoveredSessionBinding, KillSessionOutcome, LaunchTaskResult,
+    SessionSnapshot, PANEFORGE_ADAPTER_CONTRACT_VERSION, PANEFORGE_MCP_PROTOCOL_VERSION,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -23,17 +23,17 @@ enum EffectBoundary {
 }
 
 #[derive(Debug, Clone)]
-pub struct CcpanesAdapter {
-    config: CcpanesEndpointConfig,
+pub struct PaneForgeAdapter {
+    config: PaneForgeEndpointConfig,
     transport: McpHttpClient,
     session_id: Option<String>,
     request_sequence: u64,
     capability: Option<CapabilitySnapshot>,
 }
 
-impl CcpanesAdapter {
+impl PaneForgeAdapter {
     pub fn new(
-        config: CcpanesEndpointConfig,
+        config: PaneForgeEndpointConfig,
         timeouts: AdapterTimeouts,
     ) -> Result<Self, CoordinationError> {
         config.validate()?;
@@ -48,7 +48,7 @@ impl CcpanesAdapter {
         })
     }
 
-    pub fn config(&self) -> &CcpanesEndpointConfig {
+    pub fn config(&self) -> &PaneForgeEndpointConfig {
         &self.config
     }
 
@@ -58,7 +58,7 @@ impl CcpanesAdapter {
 
     pub fn status_snapshot(&self) -> AdapterStatusSnapshot {
         AdapterStatusSnapshot {
-            contract_version: CCPANES_ADAPTER_CONTRACT_VERSION.to_owned(),
+            contract_version: PANEFORGE_ADAPTER_CONTRACT_VERSION.to_owned(),
             readiness: self
                 .capability
                 .as_ref()
@@ -73,10 +73,10 @@ impl CcpanesAdapter {
         let initialize = self.call_mcp(
             "initialize",
             json!({
-                "protocolVersion": CCPANES_MCP_PROTOCOL_VERSION,
+                "protocolVersion": PANEFORGE_MCP_PROTOCOL_VERSION,
                 "capabilities": {},
                 "clientInfo": {
-                    "name": "codex-ccpanes-coordinator",
+                    "name": "codex-paneforge-coordinator",
                     "version": env!("CARGO_PKG_VERSION")
                 }
             }),
@@ -97,7 +97,7 @@ impl CcpanesAdapter {
         if !capability.dispatch_ready {
             return Err(CoordinationError::new(
                 ErrorCode::AdapterIncompatible,
-                "CC-Panes launch capability requires get_session_status and get_session_output",
+                "PaneForge launch capability requires get_session_status and get_session_output",
             ));
         }
         let arguments = filter_launch_arguments(arguments, capability);
@@ -363,7 +363,7 @@ impl CcpanesAdapter {
         let capability = self.capability.as_ref().ok_or_else(|| {
             CoordinationError::new(
                 ErrorCode::AdapterNotReady,
-                "CC-Panes capabilities have not been negotiated",
+                "PaneForge capabilities have not been negotiated",
             )
         })?;
         if capability.supports_tool(tool_name) {
@@ -371,7 +371,7 @@ impl CcpanesAdapter {
         } else {
             Err(CoordinationError::new(
                 ErrorCode::AdapterIncompatible,
-                format!("CC-Panes capability {tool_name} is unavailable"),
+                format!("PaneForge capability {tool_name} is unavailable"),
             ))
         }
     }
@@ -383,7 +383,7 @@ impl CcpanesAdapter {
         effect: EffectBoundary,
     ) -> Result<Value, CoordinationError> {
         self.request_sequence = self.request_sequence.saturating_add(1);
-        let request_id = format!("ccpanes-adapter-{}", self.request_sequence);
+        let request_id = format!("paneforge-adapter-{}", self.request_sequence);
         let request = json!({
             "jsonrpc": "2.0",
             "id": request_id,
@@ -401,7 +401,7 @@ impl CcpanesAdapter {
             return Err(safe_adapter_error(
                 ErrorCode::AuthorizationFailed,
                 format!(
-                    "cc-panes MCP authorization failed with HTTP {}",
+                    "paneforge MCP authorization failed with HTTP {}",
                     response.status_code
                 ),
             ));
@@ -409,7 +409,7 @@ impl CcpanesAdapter {
         if !matches!(response.status_code, 200..=299) {
             return Err(safe_adapter_error(
                 ErrorCode::AdapterNotReady,
-                format!("cc-panes MCP returned HTTP {}", response.status_code),
+                format!("paneforge MCP returned HTTP {}", response.status_code),
             ));
         }
         let value = parse_mcp_response(&response.body, &request_id).map_err(|error| {
@@ -443,7 +443,7 @@ impl CcpanesAdapter {
             return Err(safe_adapter_error(
                 ErrorCode::AdapterNotReady,
                 format!(
-                    "cc-panes MCP notification returned HTTP {}",
+                    "paneforge MCP notification returned HTTP {}",
                     response.status_code
                 ),
             ));
@@ -468,7 +468,7 @@ pub fn parse_mcp_response(body: &str, request_id: &str) -> Result<Value, Coordin
         let value: Value = serde_json::from_str(data).map_err(|error| {
             CoordinationError::new(
                 ErrorCode::AdapterNotReady,
-                format!("decode CC-Panes MCP SSE data failed: {error}"),
+                format!("decode PaneForge MCP SSE data failed: {error}"),
             )
         })?;
         if value.get("id").and_then(Value::as_str) == Some(request_id) {
@@ -481,7 +481,7 @@ pub fn parse_mcp_response(body: &str, request_id: &str) -> Result<Value, Coordin
     }
     Err(CoordinationError::new(
         ErrorCode::AdapterNotReady,
-        "CC-Panes MCP response did not contain JSON data",
+        "PaneForge MCP response did not contain JSON data",
     ))
 }
 
@@ -502,7 +502,7 @@ pub fn tool_result_payload(tool_name: &str, value: &Value) -> Result<Value, Coor
         return Err(safe_adapter_error(
             ErrorCode::AdapterNotReady,
             format!(
-                "cc-panes {tool_name} failed: {}",
+                "paneforge {tool_name} failed: {}",
                 compact_safe_message(text.unwrap_or("tool returned isError=true"), 512)
             ),
         ));
@@ -512,7 +512,7 @@ pub fn tool_result_payload(tool_name: &str, value: &Value) -> Result<Value, Coor
             return Err(safe_adapter_error(
                 ErrorCode::AdapterNotReady,
                 format!(
-                    "cc-panes {tool_name} failed: {}",
+                    "paneforge {tool_name} failed: {}",
                     compact_safe_message(text, 512)
                 ),
             ));
@@ -541,7 +541,7 @@ fn correlate_jsonrpc_response(value: Value, request_id: &str) -> Result<Value, C
     if value.get("id").is_some() && value.get("id").and_then(Value::as_str) != Some(request_id) {
         return Err(CoordinationError::new(
             ErrorCode::AdapterNotReady,
-            "CC-Panes MCP response id did not match request id",
+            "PaneForge MCP response id did not match request id",
         ));
     }
     Ok(value)
@@ -551,7 +551,7 @@ fn map_transport_failure(error: HttpTransportFailure, effect: EffectBoundary) ->
     match (error.phase, error.kind, effect) {
         (TransportPhase::Connect, TransportFailureKind::Timeout, _) => CoordinationError::new(
             ErrorCode::AdapterNotReady,
-            "cc-panes MCP connect timeout before external dispatch",
+            "paneforge MCP connect timeout before external dispatch",
         )
         .with_retry_after_ms(1_000),
         (TransportPhase::Connect, _, _) => CoordinationError::new(
@@ -565,7 +565,7 @@ fn map_transport_failure(error: HttpTransportFailure, effect: EffectBoundary) ->
             EffectBoundary::ExternalWorkerMayHaveStarted,
         ) => CoordinationError::new(
             ErrorCode::DispatchResultUnknown,
-            "cc-panes MCP response timeout after dispatch request was sent",
+            "paneforge MCP response timeout after dispatch request was sent",
         ),
         (TransportPhase::Response, _, EffectBoundary::ExternalWorkerMayHaveStarted) => {
             CoordinationError::new(
@@ -586,7 +586,7 @@ fn map_jsonrpc_error(error: &Value) -> CoordinationError {
     let message = error
         .get("message")
         .and_then(Value::as_str)
-        .unwrap_or("unknown CC-Panes MCP error");
+        .unwrap_or("unknown PaneForge MCP error");
     let public_code = match code {
         -32601 => ErrorCode::AdapterIncompatible,
         -32602 => ErrorCode::InvalidRequest,
@@ -596,7 +596,7 @@ fn map_jsonrpc_error(error: &Value) -> CoordinationError {
     safe_adapter_error(
         public_code,
         format!(
-            "cc-panes MCP error {code}: {}",
+            "paneforge MCP error {code}: {}",
             compact_safe_message(message, 512)
         ),
     )
@@ -685,7 +685,7 @@ fn looks_like_session_not_found(value: &str) -> bool {
 fn session_absent_error() -> CoordinationError {
     CoordinationError::new(
         ErrorCode::AdapterNotReady,
-        "cc-panes session is already absent",
+        "paneforge session is already absent",
     )
     .with_current_state("SESSION_NOT_FOUND")
     .retryable(false)
@@ -734,7 +734,7 @@ mod tests {
         let capability = CapabilitySnapshot {
             readiness: AdapterReadiness::Ready,
             server_version: None,
-            protocol_version: Some(CCPANES_MCP_PROTOCOL_VERSION.to_owned()),
+            protocol_version: Some(PANEFORGE_MCP_PROTOCOL_VERSION.to_owned()),
             tools: vec![TOOL_LAUNCH_TASK.to_owned()],
             capability_digest: "digest".to_owned(),
             launch_task_properties: vec!["projectPath".to_owned(), "prompt".to_owned()],

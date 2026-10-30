@@ -1,9 +1,9 @@
 use serde_json::{json, Value};
 
 use crate::{
-    output_schema_version, McpToolName, CCPANES_MAX_CANARY_POLL_INTERVAL_MS,
-    CCPANES_MAX_CANARY_TIMEOUT_MS, CCPANES_MAX_CONNECT_TIMEOUT_MS, CCPANES_MAX_REQUEST_TIMEOUT_MS,
-    CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION, CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
+    output_schema_version, McpToolName, PANEFORGE_MAX_CANARY_POLL_INTERVAL_MS,
+    PANEFORGE_MAX_CANARY_TIMEOUT_MS, PANEFORGE_MAX_CONNECT_TIMEOUT_MS, PANEFORGE_MAX_REQUEST_TIMEOUT_MS,
+    PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION, PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION,
     COMMAND_ACK_SCHEMA_VERSION, EVENT_PAGE_SCHEMA_VERSION, EVENT_QUERY_SCHEMA_VERSION,
     IPC_SCHEMA_VERSION, RESULT_QUERY_SCHEMA_VERSION, RESULT_RESPONSE_SCHEMA_VERSION,
     STATUS_QUERY_SCHEMA_VERSION, STATUS_RESPONSE_SCHEMA_VERSION, WORKER_CANCEL_SCHEMA_VERSION,
@@ -28,8 +28,8 @@ pub fn ipc_envelope_schema() -> Value {
 
 pub fn mcp_tool_input_schema(name: McpToolName) -> Value {
     match name {
-        McpToolName::CcpanesPreflight => ccpanes_preflight_input_schema(),
-        McpToolName::CcpanesSyntheticCanary => ccpanes_synthetic_canary_input_schema(),
+        McpToolName::PaneForgePreflight => paneforge_preflight_input_schema(),
+        McpToolName::PaneForgeSyntheticCanary => paneforge_synthetic_canary_input_schema(),
         McpToolName::WorkerDispatch => worker_dispatch_input_schema(),
         McpToolName::WorkflowCreate => workflow_create_input_schema(),
         McpToolName::WorkerCancel => worker_cancel_input_schema(),
@@ -48,8 +48,8 @@ pub fn mcp_tool_input_schema(name: McpToolName) -> Value {
 
 pub fn mcp_tool_output_schema(name: McpToolName) -> Value {
     match name {
-        McpToolName::CcpanesPreflight => ccpanes_preflight_output_schema(),
-        McpToolName::CcpanesSyntheticCanary => ccpanes_synthetic_canary_output_schema(),
+        McpToolName::PaneForgePreflight => paneforge_preflight_output_schema(),
+        McpToolName::PaneForgeSyntheticCanary => paneforge_synthetic_canary_output_schema(),
         McpToolName::WorkerDispatch => worker_dispatch_output_schema(),
         McpToolName::WorkflowEvents => versioned_object_schema(EVENT_PAGE_SCHEMA_VERSION),
         McpToolName::WorkflowResult => workflow_result_output_schema(),
@@ -64,15 +64,15 @@ pub fn mcp_tool_output_schema(name: McpToolName) -> Value {
     }
 }
 
-fn ccpanes_preflight_input_schema() -> Value {
+fn paneforge_preflight_input_schema() -> Value {
     json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "title": "ccpanes_preflight input v1beta1",
+        "title": "paneforge_preflight input v1beta1",
         "type": "object",
         "required": ["schemaVersion"],
         "additionalProperties": false,
         "properties": {
-            "schemaVersion": { "const": CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION },
+            "schemaVersion": { "const": PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION },
             "discoveryPath": {
                 "type": ["string", "null"],
                 "minLength": 1,
@@ -87,23 +87,23 @@ fn ccpanes_preflight_input_schema() -> Value {
             "connectTimeoutMs": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": CCPANES_MAX_CONNECT_TIMEOUT_MS,
+                "maximum": PANEFORGE_MAX_CONNECT_TIMEOUT_MS,
                 "default": 2000
             },
             "requestTimeoutMs": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": CCPANES_MAX_REQUEST_TIMEOUT_MS,
+                "maximum": PANEFORGE_MAX_REQUEST_TIMEOUT_MS,
                 "default": 8000
             }
         }
     })
 }
 
-fn ccpanes_synthetic_canary_input_schema() -> Value {
+fn paneforge_synthetic_canary_input_schema() -> Value {
     json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "title": "ccpanes_synthetic_canary input v1beta1",
+        "title": "paneforge_synthetic_canary input v1beta1",
         "type": "object",
         "required": [
             "schemaVersion",
@@ -115,7 +115,7 @@ fn ccpanes_synthetic_canary_input_schema() -> Value {
         ],
         "additionalProperties": false,
         "properties": {
-            "schemaVersion": { "const": CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION },
+            "schemaVersion": { "const": PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION },
             "requestId": {
                 "type": "string",
                 "minLength": 1,
@@ -150,35 +150,35 @@ fn ccpanes_synthetic_canary_input_schema() -> Value {
             "timeoutMs": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": CCPANES_MAX_CANARY_TIMEOUT_MS,
+                "maximum": PANEFORGE_MAX_CANARY_TIMEOUT_MS,
                 "default": 420000
             },
             "pollIntervalMs": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": CCPANES_MAX_CANARY_POLL_INTERVAL_MS,
+                "maximum": PANEFORGE_MAX_CANARY_POLL_INTERVAL_MS,
                 "default": 750
             },
             "connectTimeoutMs": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": CCPANES_MAX_CONNECT_TIMEOUT_MS,
+                "maximum": PANEFORGE_MAX_CONNECT_TIMEOUT_MS,
                 "default": 2000
             },
             "requestTimeoutMs": {
                 "type": "integer",
                 "minimum": 1,
-                "maximum": CCPANES_MAX_REQUEST_TIMEOUT_MS,
+                "maximum": PANEFORGE_MAX_REQUEST_TIMEOUT_MS,
                 "default": 12000
             }
         }
     })
 }
 
-fn ccpanes_preflight_output_schema() -> Value {
+fn paneforge_preflight_output_schema() -> Value {
     json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "title": "ccpanes_preflight output v1beta1",
+        "title": "paneforge_preflight output v1beta1",
         "type": "object",
         "required": [
             "contractVersion",
@@ -192,7 +192,7 @@ fn ccpanes_preflight_output_schema() -> Value {
         "additionalProperties": false,
         "properties": {
             "contractVersion": {
-                "const": output_schema_version(McpToolName::CcpanesPreflight)
+                "const": output_schema_version(McpToolName::PaneForgePreflight)
             },
             "adapterContractVersion": { "type": "string", "minLength": 1 },
             "readiness": { "enum": ["READY", "DEGRADED", "INCOMPATIBLE"] },
@@ -209,10 +209,10 @@ fn ccpanes_preflight_output_schema() -> Value {
     })
 }
 
-fn ccpanes_synthetic_canary_output_schema() -> Value {
+fn paneforge_synthetic_canary_output_schema() -> Value {
     json!({
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "title": "ccpanes_synthetic_canary output v1beta1",
+        "title": "paneforge_synthetic_canary output v1beta1",
         "type": "object",
         "required": [
             "contractVersion",
@@ -228,7 +228,7 @@ fn ccpanes_synthetic_canary_output_schema() -> Value {
         "additionalProperties": false,
         "properties": {
             "contractVersion": {
-                "const": output_schema_version(McpToolName::CcpanesSyntheticCanary)
+                "const": output_schema_version(McpToolName::PaneForgeSyntheticCanary)
             },
             "workspaceGateContractVersion": { "type": "string", "minLength": 1 },
             "workspaceGateReadiness": {
@@ -491,12 +491,12 @@ mod tests {
     }
 
     #[test]
-    fn ccpanes_input_schemas_are_closed_and_match_dto_defaults() {
-        let preflight = mcp_tool_input_schema(McpToolName::CcpanesPreflight);
+    fn paneforge_input_schemas_are_closed_and_match_dto_defaults() {
+        let preflight = mcp_tool_input_schema(McpToolName::PaneForgePreflight);
         assert_eq!(preflight["additionalProperties"], false);
         assert_eq!(
             preflight["properties"]["schemaVersion"]["const"],
-            CCPANES_PREFLIGHT_REQUEST_SCHEMA_VERSION
+            PANEFORGE_PREFLIGHT_REQUEST_SCHEMA_VERSION
         );
         assert_eq!(
             preflight["properties"]["discoveryPath"]["default"],
@@ -521,11 +521,11 @@ mod tests {
         );
         assert_eq!(preflight["properties"]["discoveryGeneration"]["minimum"], 1);
 
-        let canary = mcp_tool_input_schema(McpToolName::CcpanesSyntheticCanary);
+        let canary = mcp_tool_input_schema(McpToolName::PaneForgeSyntheticCanary);
         assert_eq!(canary["additionalProperties"], false);
         assert_eq!(
             canary["properties"]["schemaVersion"]["const"],
-            CCPANES_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION
+            PANEFORGE_SYNTHETIC_CANARY_REQUEST_SCHEMA_VERSION
         );
         assert_eq!(
             canary["properties"]["discoveryPath"]["default"],
@@ -559,12 +559,12 @@ mod tests {
     }
 
     #[test]
-    fn ccpanes_output_schemas_are_closed_and_require_public_surfaces() {
-        let preflight = mcp_tool_output_schema(McpToolName::CcpanesPreflight);
+    fn paneforge_output_schemas_are_closed_and_require_public_surfaces() {
+        let preflight = mcp_tool_output_schema(McpToolName::PaneForgePreflight);
         assert_eq!(preflight["additionalProperties"], false);
         assert_eq!(
             preflight["properties"]["contractVersion"]["const"],
-            "ccpanes-adapter-readonly-preflight/v1beta1"
+            "paneforge-adapter-readonly-preflight/v1beta1"
         );
         for required in [
             "contractVersion",
@@ -578,11 +578,11 @@ mod tests {
                 .contains(&json!(required)));
         }
 
-        let canary = mcp_tool_output_schema(McpToolName::CcpanesSyntheticCanary);
+        let canary = mcp_tool_output_schema(McpToolName::PaneForgeSyntheticCanary);
         assert_eq!(canary["additionalProperties"], false);
         assert_eq!(
             canary["properties"]["contractVersion"]["const"],
-            "coordination.real-ccpanes-canary-runner/v1beta1"
+            "coordination.real-paneforge-canary-runner/v1beta1"
         );
         for required in [
             "contractVersion",

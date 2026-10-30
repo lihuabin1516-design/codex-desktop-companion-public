@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(argument) = args.next() {
         match argument.as_str() {
             "--version" | "-V" => {
-                println!("codex-ccpanes-mcp {}", env!("CARGO_PKG_VERSION"));
+                println!("codex-paneforge-mcp {}", env!("CARGO_PKG_VERSION"));
                 return Ok(());
             }
             "--describe" => {
@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     "{}",
                     serde_json::to_string(&serde_json::json!({
                         "kind": "coordination-mcp",
-                        "name": "codex-ccpanes-mcp",
+                        "name": "codex-paneforge-mcp",
                         "version": env!("CARGO_PKG_VERSION"),
                         "mcpSchemaVersion": coordination_protocol::MCP_SCHEMA_VERSION,
                         "ipcSchemaVersion": coordination_protocol::IPC_SCHEMA_VERSION,

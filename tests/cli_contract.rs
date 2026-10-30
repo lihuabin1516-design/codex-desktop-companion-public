@@ -2,7 +2,7 @@ use std::process::Command;
 
 #[test]
 fn describe_contract_is_machine_readable() {
-    let executable = env!("CARGO_BIN_EXE_codex-ccpanes");
+    let executable = env!("CARGO_BIN_EXE_codex-paneforge");
     let output = Command::new(executable)
         .args(["describe", "--json"])
         .output()
@@ -17,7 +17,7 @@ fn describe_contract_is_machine_readable() {
 
 #[test]
 fn help_lists_production_commands() {
-    let executable = env!("CARGO_BIN_EXE_codex-ccpanes");
+    let executable = env!("CARGO_BIN_EXE_codex-paneforge");
     let output = Command::new(executable)
         .arg("--help")
         .output()

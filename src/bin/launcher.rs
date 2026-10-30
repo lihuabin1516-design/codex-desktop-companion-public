@@ -4,7 +4,7 @@ use std::env;
 use std::ffi::OsString;
 use std::process;
 
-use codex_ccpanes::launcher::{launch, LaunchRequest};
+use codex_paneforge::launcher::{launch, LaunchRequest};
 
 fn main() {
     let arguments = env::args_os().skip(1).collect::<Vec<OsString>>();
@@ -13,7 +13,7 @@ fn main() {
         arguments,
         wait: false,
     }) {
-        show_error(&format!("CC-Panes 安全启动失败：\n\n{error:#}"));
+        show_error(&format!("PaneForge 安全启动失败：\n\n{error:#}"));
         process::exit(2);
     }
 }
@@ -23,7 +23,7 @@ fn show_error(message: &str) {
     use std::os::windows::ffi::OsStrExt;
     use windows_sys::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_ICONERROR, MB_OK};
 
-    let title = std::ffi::OsStr::new("Codex + CC-Panes")
+    let title = std::ffi::OsStr::new("Codex + PaneForge")
         .encode_wide()
         .chain(Some(0))
         .collect::<Vec<_>>();

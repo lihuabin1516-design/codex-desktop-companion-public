@@ -3,13 +3,13 @@
 This page describes the implemented source components and their current limits. It is not a claim that all components are shipped, installed, or enabled by default.
 
 ```text
-CodexCCPanes launcher
+CodexPaneForge launcher
         |
         v
 Coordinator <---- local IPC ----> MCP server
         |
         v
-CC-Panes HTTP MCP adapter
+PaneForge HTTP MCP adapter
 ```
 
 The Rust workspace contains separate crates for workflow state and protocol types, SQLite persistence, coordination runtime, host integration, and the stdio MCP boundary. The adapter treats the host as an external installation; it does not bundle or patch the host application.

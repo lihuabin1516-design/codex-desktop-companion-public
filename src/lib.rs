@@ -10,7 +10,7 @@ pub mod logging;
 use serde::Serialize;
 
 pub const PRODUCT_VERSION: &str = env!("CARGO_PKG_VERSION");
-pub const PRODUCT_NAME: &str = "Codex + CC-Panes Companion";
+pub const PRODUCT_NAME: &str = "Codex + PaneForge Companion";
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]

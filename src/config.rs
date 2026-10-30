@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::discovery::{external_command_path, resolve_ccpanes};
+use crate::discovery::{external_command_path, resolve_paneforge};
 use crate::hashing::{hash_bytes, hash_file, hash_path};
 use crate::logging::{product_home, unix_ms};
 
@@ -15,7 +15,7 @@ pub const CONFIG_SCHEMA_VERSION: u32 = 1;
 #[serde(rename_all = "camelCase")]
 pub struct CompanionConfig {
     pub schema_version: u32,
-    pub ccpanes_executable: PathBuf,
+    pub paneforge_executable: PathBuf,
     pub source: String,
     pub generated_unix_ms: u128,
 }
@@ -77,17 +77,17 @@ pub fn load_config(path: &Path) -> Result<Option<CompanionConfig>> {
     if config.schema_version != CONFIG_SCHEMA_VERSION {
         anyhow::bail!("unsupported_config_schema_{}", config.schema_version);
     }
-    if !config.ccpanes_executable.is_file() {
-        anyhow::bail!("configured_ccpanes_executable_not_found");
+    if !config.paneforge_executable.is_file() {
+        anyhow::bail!("configured_paneforge_executable_not_found");
     }
     Ok(Some(config))
 }
 
-pub fn configured_ccpanes_path() -> Option<PathBuf> {
+pub fn configured_paneforge_path() -> Option<PathBuf> {
     load_default_config()
         .ok()
         .flatten()
-        .map(|config| config.ccpanes_executable)
+        .map(|config| config.paneforge_executable)
 }
 
 pub fn migrate(request: MigrationRequest) -> Result<MigrationReport> {
@@ -129,7 +129,7 @@ pub fn migrate(request: MigrationRequest) -> Result<MigrationReport> {
 
         let config = CompanionConfig {
             schema_version: CONFIG_SCHEMA_VERSION,
-            ccpanes_executable: candidate.clone(),
+            paneforge_executable: candidate.clone(),
             source: source.clone(),
             generated_unix_ms: unix_ms(),
         };
@@ -168,10 +168,10 @@ fn migration_candidate(
     if let Some(path) = legacy_config {
         return Ok((read_legacy_target(path)?, "legacy-config".into()));
     }
-    if let Some(path) = env::var_os("LIVEAGENT_CCPANES_EXE").filter(|value| !value.is_empty()) {
+    if let Some(path) = env::var_os("LIVEAGENT_PANEFORGE_EXE").filter(|value| !value.is_empty()) {
         return Ok((PathBuf::from(path), "legacy-environment".into()));
     }
-    let resolved = resolve_ccpanes(None)?;
+    let resolved = resolve_paneforge(None)?;
     Ok((resolved.path, format!("discovery:{}", resolved.source)))
 }
 
@@ -179,9 +179,9 @@ fn read_legacy_target(path: &Path) -> Result<PathBuf> {
     let bytes = fs::read(path).with_context(|| format!("read legacy config {}", path.display()))?;
     if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) {
         for key in [
-            "ccpanesExecutable",
-            "ccpanesExe",
-            "officialCcpanesExecutable",
+            "paneforgeExecutable",
+            "paneforgeExe",
+            "officialPaneForgeExecutable",
             "target",
         ] {
             if let Some(path) = value.get(key).and_then(|value| value.as_str()) {
@@ -192,7 +192,7 @@ fn read_legacy_target(path: &Path) -> Result<PathBuf> {
     let text = String::from_utf8(bytes).context("legacy config is not UTF-8 or JSON")?;
     let value = text.trim().trim_matches('"');
     if value.is_empty() {
-        anyhow::bail!("legacy_config_has_no_ccpanes_path");
+        anyhow::bail!("legacy_config_has_no_paneforge_path");
     }
     Ok(PathBuf::from(value))
 }
@@ -238,7 +238,7 @@ mod tests {
     #[test]
     fn dry_run_does_not_write_configuration() {
         let root = tempfile::tempdir().expect("tempdir");
-        let executable = root.path().join("cc-panes.exe");
+        let executable = root.path().join("paneforge.exe");
         fs::write(&executable, b"fixture").expect("fixture");
         let config = root.path().join("config.json");
         let report = migrate(MigrationRequest {
@@ -258,14 +258,14 @@ mod tests {
     #[test]
     fn apply_backs_up_existing_configuration_and_loads_new_target() {
         let root = tempfile::tempdir().expect("tempdir");
-        let old = root.path().join("old-cc-panes.exe");
-        let new = root.path().join("cc-panes.exe");
+        let old = root.path().join("old-paneforge.exe");
+        let new = root.path().join("paneforge.exe");
         fs::write(&old, b"old").expect("old fixture");
         fs::write(&new, b"new").expect("new fixture");
         let config_path = root.path().join("config.json");
         let existing = CompanionConfig {
             schema_version: CONFIG_SCHEMA_VERSION,
-            ccpanes_executable: old,
+            paneforge_executable: old,
             source: "old".into(),
             generated_unix_ms: 1,
         };
@@ -291,19 +291,19 @@ mod tests {
             .expect("load")
             .expect("config present");
         let expected = external_command_path(&fs::canonicalize(&new).expect("canonical target"));
-        assert_eq!(loaded.ccpanes_executable, expected);
+        assert_eq!(loaded.paneforge_executable, expected);
     }
 
     #[test]
     fn legacy_json_keys_are_supported() {
         let root = tempfile::tempdir().expect("tempdir");
-        let executable = root.path().join("cc-panes.exe");
+        let executable = root.path().join("paneforge.exe");
         fs::write(&executable, b"fixture").expect("fixture");
         let legacy = root.path().join("legacy.json");
         fs::write(
             &legacy,
             serde_json::to_vec(&serde_json::json!({
-                "officialCcpanesExecutable": executable
+                "officialPaneForgeExecutable": executable
             }))
             .expect("serialize legacy"),
         )

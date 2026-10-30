@@ -3,8 +3,8 @@ use coordination_core::{
     RequestId, WorkerExecutor,
 };
 use coordination_protocol::{
-    mcp_tool_description, mcp_tool_input_schema, mcp_tool_output_schema, CcpanesPreflightInput,
-    CcpanesSyntheticCanaryInput, EntityStatusInput, IpcEnvelope, IpcMessage, IpcResponse,
+    mcp_tool_description, mcp_tool_input_schema, mcp_tool_output_schema, PaneForgePreflightInput,
+    PaneForgeSyntheticCanaryInput, EntityStatusInput, IpcEnvelope, IpcMessage, IpcResponse,
     McpToolKind, McpToolName, RevisionCommandInput, WorkerCancelInput, WorkerDispatchInput,
     WorkflowCreateInput, WorkflowEventsInput, WorkflowResultInput, COMMAND_ACK_SCHEMA_VERSION,
     IPC_SCHEMA_VERSION, MCP_PROTOCOL_VERSION, MCP_SCHEMA_VERSION, WORKFLOW_CANCEL_SCHEMA_VERSION,
@@ -110,18 +110,18 @@ where
                     IpcMessage::query(CoordinationQuery::AdapterStatus),
                 ))
             }
-            McpToolName::CcpanesPreflight => {
-                let input = CcpanesPreflightInput::from_value(arguments)?;
+            McpToolName::PaneForgePreflight => {
+                let input = PaneForgePreflightInput::from_value(arguments)?;
                 Ok((
-                    self.next_request_id("ccpanes-preflight")?,
-                    IpcMessage::CcpanesPreflight(input),
+                    self.next_request_id("paneforge-preflight")?,
+                    IpcMessage::PaneForgePreflight(input),
                 ))
             }
-            McpToolName::CcpanesSyntheticCanary => {
-                let input = CcpanesSyntheticCanaryInput::from_value(arguments)?;
+            McpToolName::PaneForgeSyntheticCanary => {
+                let input = PaneForgeSyntheticCanaryInput::from_value(arguments)?;
                 Ok((
                     input.request_id.clone(),
-                    IpcMessage::CcpanesSyntheticCanary(input),
+                    IpcMessage::PaneForgeSyntheticCanary(input),
                 ))
             }
             McpToolName::WorkerStatus => {
@@ -283,7 +283,7 @@ pub fn initialize_result() -> Value {
             "version": env!("CARGO_PKG_VERSION")
         },
         "coordinationSchemaVersion": MCP_SCHEMA_VERSION,
-        "instructions": "Use high-level Codex + CC-Panes coordination tools. Coordinator owns Workflow state; this MCP server is a stateless IPC boundary."
+        "instructions": "Use high-level Codex + PaneForge coordination tools. Coordinator owns Workflow state; this MCP server is a stateless IPC boundary."
     })
 }
 

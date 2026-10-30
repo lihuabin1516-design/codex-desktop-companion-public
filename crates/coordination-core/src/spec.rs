@@ -628,12 +628,12 @@ mod tests {
     #[test]
     fn workflow_spec_accepts_and_validates_repository_workspace_name() {
         let mut spec = valid_spec();
-        spec.workflow.repository.workspace_name = Some("codex-ccpanes-phase7-success".to_owned());
+        spec.workflow.repository.workspace_name = Some("codex-paneforge-phase7-success".to_owned());
         assert_eq!(spec.validate(), Ok(()));
         let value = serde_json::to_value(&spec).unwrap();
         assert_eq!(
             value["workflow"]["repository"]["workspaceName"],
-            "codex-ccpanes-phase7-success"
+            "codex-paneforge-phase7-success"
         );
 
         spec.workflow.repository.workspace_name = Some("bad\nname".to_owned());

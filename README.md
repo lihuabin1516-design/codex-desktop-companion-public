@@ -1,28 +1,28 @@
 # Codex Desktop Companion
 
-面向 Windows 的 Codex App 与本机 pane terminal workspace 安全启动、诊断和协调工具。它发现并调用用户已安装的 `cc-panes.exe`，不重新打包或修改该宿主程序。
+面向 Windows 的 Codex App 与本机 pane terminal workspace 安全启动、诊断和协调工具。它发现并调用用户已安装的 `paneforge.exe`，不重新打包或修改该宿主程序。
 
-它不重新打包 Codex App 或 CC-Panes，而是始终发现并启动用户已经安装的官方
-`cc-panes.exe`。启动前会从子进程环境中移除 Codex Desktop 的任务级私有变量，
-避免 CC-Panes 内部启动 Codex CLI 时误入受控 launcher 上下文。
+它不重新打包 Codex App 或 PaneForge，而是始终发现并启动用户已经安装的官方
+`paneforge.exe`。启动前会从子进程环境中移除 Codex Desktop 的任务级私有变量，
+避免 PaneForge 内部启动 Codex CLI 时误入受控 launcher 上下文。
 
 状态：源码预览。当前 Cargo manifest 版本为 `0.1.0-beta.3`；文档中的 `0.2.0-beta.1` 是发行包合同目标，不代表该版本已发布。此公开快照没有可下载安装包或公开 CI 二进制；外部 Windows 机器验收及二进制依赖许可证包审查仍待完成。
 
 ## 核心价值
 
-- 保持 Codex、CC-Panes 各自独立启动和官方升级；
-- 把环境清理放在真实子进程边界，而不是修改 CC-Panes 源码或官方 EXE；
+- 保持 Codex、PaneForge 各自独立启动和官方升级；
+- 把环境清理放在真实子进程边界，而不是修改 PaneForge 源码或官方 EXE；
 - 提供可审计的 probe、doctor、配置迁移、构建目录扫描和版本化安装；
 - 三组件目标链路不引入 LiveAgent、Tauri、Gateway、WebUI 或 workflowd 运行依赖；
-- 故障时仍可直接使用官方 Codex App 与 CC-Panes。
+- 故障时仍可直接使用官方 Codex App 与 PaneForge。
 
 ## 能力
 
-- 安全启动官方 CC-Panes，保留官方自动更新能力；
-- 自动发现 LocalAppData、Program Files、PATH 或显式指定的 CC-Panes；
+- 安全启动官方 PaneForge，保留官方自动更新能力；
+- 自动发现 LocalAppData、Program Files、PATH 或显式指定的 PaneForge；
 - 只移除 `CODEX_INTERNAL_*`、`CODEX_THREAD_ID`、
   `CODEX_PERMISSION_PROFILE` 等任务级变量；
-- 检查 Codex CLI、CC-Panes、遗留 Workflow 进程和构建进程；
+- 检查 Codex CLI、PaneForge、遗留 Workflow 进程和构建进程；
 - 生成不包含 Token 与环境变量值的 JSON 诊断报告；
 - 只读扫描大型 Rust `target` 目录；
 - 用户级一键安装、版本化升级和精确卸载。
@@ -44,7 +44,7 @@
   Worker/Workflow timeout、dispatch/reconcile/control semaphore、pause/resume/cancel、
   result aggregation、metrics/log snapshot、repository baseline guard 和专用合成 Git
   仓库登记/恢复 guard；
-- `ccpanes-adapter`：显式 discovery、认证 Header 注入、HTTP MCP initialize/tools/list、
+- `paneforge-adapter`：显式 discovery、认证 Header 注入、HTTP MCP initialize/tools/list、
   capability digest、launch/query/output/submit/kill、unknown dispatch reconcile、只读 preflight
   报告、Session inventory 脱敏摘要、专用 Workspace/Project 只读 gate 和 deterministic fake
   server；
@@ -52,11 +52,11 @@
   公共错误映射、Coordinator IPC consumer seam 和 synthetic 多 Step Workflow create/start。
 
 当前发布包仍以 Launcher/诊断能力为主；Phase 7 当前增加只读 capability preflight 合同、
-示例 runner、专用合成 Git 仓库准备合同、专用 CC-Panes Workspace/Project 只读 gate、
+示例 runner、专用合成 Git 仓库准备合同、专用 PaneForge Workspace/Project 只读 gate、
 fake 单 Worker success canary、cancellation canary、Coordinator restart canary、dropped
 launch response / unknown dispatch canary、Token/discovery rotation canary 和 synthetic
-CC-Panes process restart canary，以及 synthetic multi-worker controlled capacity canary。
-真实 CC-Panes preflight 仅执行 initialize、tools/list、list_sessions 和 list_panes；合成
+PaneForge process restart canary，以及 synthetic multi-worker controlled capacity canary。
+真实 PaneForge preflight 仅执行 initialize、tools/list、list_sessions 和 list_panes；合成
 Git 仓库只在专用空目录创建并记录 marker digest、baseline HEAD 与 dirty 状态；
 Workspace/Project gate 只执行 list_workspaces/list_projects 并生成 setup plan，不调用
 create_workspace 或 add_project_to_workspace；success canary 仅通过 fake Adapter 验证
@@ -75,14 +75,14 @@ canary 仅通过 fake Adapter 验证旧 discovery/token 成功、旧 token 对�
 `workflow_create/start`、Coordinator 和 fake Adapter 验证 6 个只读 Worker 在 host/dispatch/
 per-workflow cap=3 下分两批派发，active/queued 计数有界，Binding/Session 与
 `clientRequestId` 唯一，`stepId` 来源和 `workflow_result` complete 保留。通用真实
-Worker 派发、真实 Session 控制、真实 Token/discovery rotation、真实 CC-Panes process restart 和后台
-进程 supervisor 保持关闭；开发验收在专用合成项目执行前台 CC-Panes `0.12.3`
-Codex challenge-response canary，并通过官方 CC-Panes 新对话确认全局 skill/MCP、preflight、
-`launchWorkspaceName=codex-ccpanes-phase7-*`、`cwdMatched=true` 和 `acceptancePassed=true`，
+Worker 派发、真实 Session 控制、真实 Token/discovery rotation、真实 PaneForge process restart 和后台
+进程 supervisor 保持关闭；开发验收在专用合成项目执行前台 PaneForge `0.12.3`
+Codex challenge-response canary，并通过官方 PaneForge 新对话确认全局 skill/MCP、preflight、
+`launchWorkspaceName=codex-paneforge-phase7-*`、`cwdMatched=true` 和 `acceptancePassed=true`，
 未调用 submit/kill/write。Phase 8 首个本地包装切片只要求
 release 包包含三个产品组件 EXE
-`CodexCCPanes.exe`、`codex-ccpanes-coordinator.exe`、`codex-ccpanes-mcp.exe` 与既有辅助
-CLI `codex-ccpanes.exe`，并通过 `ARTIFACT_MANIFEST.json`、`SHA256SUMS`、
+`CodexPaneForge.exe`、`codex-paneforge-coordinator.exe`、`codex-paneforge-mcp.exe` 与既有辅助
+CLI `codex-paneforge.exe`，并通过 `ARTIFACT_MANIFEST.json`、`SHA256SUMS`、
 `DEPENDENCIES.json` 和隔离安装状态登记验证；`Configure-CodexMcp.ps1` 通过显式临时
 `ConfigPath` 验证托管 MCP block 写入、写前备份、幂等 repair 和事务 rollback 恢复
 present/absent 原状态；安装器仅在显式 `-ConfigureCodexMcp -CodexConfigPath <path>`
@@ -91,7 +91,7 @@ block；`Manage-Coordinator.ps1` 提供显式 `Describe`、`Verify`、前台一�
 `StartPlan`，安装默认仍不会启动后台 Coordinator；`EXTERNAL_WINDOWS_ACCEPTANCE.md`、
 `Test-ExternalWindowsAcceptance.ps1` 和 `RELEASE_NOTES_0.2.0-beta.1.md` 进入 package，
 并由 Manifest 声明外部 Windows 验收 runner 与 beta release notes 合同。package/default
-MCP 注册、后台守护、通用 Coordinator↔Adapter 派发、真实 CC-Panes 多 Worker E2E、外部
+MCP 注册、后台守护、通用 Coordinator↔Adapter 派发、真实 PaneForge 多 Worker E2E、外部
 Windows 机器实际验收和真实发布属于后续阶段。
 
 ## 下载与安装
@@ -103,25 +103,25 @@ Windows 机器实际验收和真实发布属于后续阶段。
 ## 命令行使用
 
 ```powershell
-# 默认安全启动 CC-Panes
-codex-ccpanes.exe start
+# 默认安全启动 PaneForge
+codex-paneforge.exe start
 
 # 健康检查
-codex-ccpanes.exe doctor
-codex-ccpanes.exe doctor --json --output .\doctor.json
+codex-paneforge.exe doctor
+codex-paneforge.exe doctor --json --output .\doctor.json
 
 # 只读检查真实官方安装
-codex-ccpanes.exe probe
+codex-paneforge.exe probe
 
 # 查找大型 Rust 构建目录，不执行删除
-codex-ccpanes.exe audit-builds <build-cache-root> --threshold-gb 5
+codex-paneforge.exe audit-builds <build-cache-root> --threshold-gb 5
 
 # 预览旧配置迁移；加入 --apply 才会写入 Companion 自己的配置
-codex-ccpanes.exe migrate-config --from .\legacy.json --json
-codex-ccpanes.exe migrate-config --ccpanes-bin "$env:LOCALAPPDATA\cc-panes\cc-panes.exe" --apply
+codex-paneforge.exe migrate-config --from .\legacy.json --json
+codex-paneforge.exe migrate-config --paneforge-bin "$env:LOCALAPPDATA\paneforge\paneforge.exe" --apply
 ```
 
-桌面快捷方式使用无控制台窗口的 `CodexCCPanes.exe`。
+桌面快捷方式使用无控制台窗口的 `CodexPaneForge.exe`。
 
 ## 维护入口
 

@@ -2,11 +2,11 @@
 param(
     [ValidateSet("Describe", "Verify", "Health", "StartPlan")]
     [string]$Action = "Describe",
-    [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA "CodexCCPanes"),
+    [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA "CodexPaneForge"),
     [string]$CoordinatorExecutable,
     [string]$DataDir,
     [string]$DatabasePath,
-    [string]$IpcEndpoint = "codex-ccpanes-coordinator-v1",
+    [string]$IpcEndpoint = "codex-paneforge-coordinator-v1",
     [switch]$Json,
     [switch]$Quiet
 )
@@ -14,13 +14,13 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-$ProductId = "CodexCCPanesCompanion"
+$ProductId = "CodexPaneForgeCompanion"
 $ScriptName = "Manage-Coordinator.ps1"
 
 function Write-Step {
     param([string]$Message)
     if (-not $Quiet -and -not $Json) {
-        Write-Host "[Codex + CC-Panes] $Message"
+        Write-Host "[Codex + PaneForge] $Message"
     }
 }
 
@@ -128,7 +128,7 @@ function Invoke-CoordinatorVersion {
     if ($LASTEXITCODE -ne 0) {
         throw "Coordinator version command failed with exit code $LASTEXITCODE"
     }
-    if ($version -notmatch '^codex-ccpanes-coordinator\s+') {
+    if ($version -notmatch '^codex-paneforge-coordinator\s+') {
         throw "Coordinator version contract failed: $version"
     }
     return [string]$version

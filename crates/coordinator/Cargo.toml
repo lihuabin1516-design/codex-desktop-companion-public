@@ -3,18 +3,18 @@ name = "coordinator"
 version = "0.1.0-beta.3"
 edition = "2021"
 license = "MIT"
-description = "Coordinator runtime contract for Codex + CC-Panes Coordination Plane"
+description = "Coordinator runtime contract for Codex + PaneForge Coordination Plane"
 
 [lib]
 name = "coordination_coordinator"
 path = "src/lib.rs"
 
 [[bin]]
-name = "codex-ccpanes-coordinator"
+name = "codex-paneforge-coordinator"
 path = "src/main.rs"
 
 [dependencies]
-ccpanes-adapter = { path = "../ccpanes-adapter" }
+paneforge-adapter = { path = "../paneforge-adapter" }
 coordination-core = { path = "../coordination-core" }
 coordination-protocol = { path = "../coordination-protocol" }
 coordination-store = { path = "../coordination-store" }
