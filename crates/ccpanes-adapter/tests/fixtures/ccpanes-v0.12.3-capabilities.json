@@ -1,0 +1,139 @@
+{
+  "source": {
+    "repository": "wuxiran/cc-pane",
+    "tag": "v0.12.3",
+    "commit": "7fad08d8a210015eb12af283c720394e7324f471",
+    "changelogDate": "2026-08-10",
+    "schemaOwner": "src-tauri/src/services/orchestrator_service.rs"
+  },
+  "initializeResult": {
+    "protocolVersion": "2025-03-26",
+    "serverInfo": {
+      "name": "cc-panes-orchestrator",
+      "version": "1.3.0"
+    },
+    "capabilities": {
+      "tools": {}
+    }
+  },
+  "toolsListResult": {
+    "tools": [
+      {
+        "name": "launch_task",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "projectPath": { "type": "string" },
+            "prompt": { "type": ["string", "null"] },
+            "providerId": { "type": ["string", "null"] },
+            "modelId": { "type": ["string", "null"] },
+            "providerSelection": { "type": ["string", "null"] },
+            "profileId": { "type": ["string", "null"] },
+            "title": { "type": ["string", "null"] },
+            "workspaceName": { "type": ["string", "null"] },
+            "runtimeKind": { "type": ["string", "null"] },
+            "resumeId": { "type": ["string", "null"] },
+            "paneId": { "type": ["string", "null"] },
+            "layoutId": { "type": ["string", "null"] },
+            "layoutName": { "type": ["string", "null"] },
+            "cliTool": { "type": ["string", "null"] },
+            "placement": { "type": ["string", "null"] }
+          },
+          "required": ["projectPath"],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "list_sessions",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "list_panes",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "get_session_status",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sessionId": { "type": "string" }
+          },
+          "required": ["sessionId"],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "get_session_output",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sessionId": { "type": "string" },
+            "lines": { "type": ["integer", "null"], "minimum": 0 }
+          },
+          "required": ["sessionId"],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "submit_to_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sessionId": { "type": "string" },
+            "text": { "type": "string" }
+          },
+          "required": ["sessionId", "text"],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "kill_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sessionId": { "type": "string" }
+          },
+          "required": ["sessionId"],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "wait_for_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sessionId": { "type": ["string", "null"] },
+            "launchId": { "type": ["string", "null"] },
+            "waitFor": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "timeoutMs": { "type": ["integer", "null"], "minimum": 0 }
+          },
+          "required": ["waitFor"],
+          "additionalProperties": false
+        }
+      },
+      {
+        "name": "write_to_session",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "sessionId": { "type": "string" },
+            "text": { "type": "string" }
+          },
+          "required": ["sessionId", "text"],
+          "additionalProperties": false
+        }
+      }
+    ]
+  }
+}

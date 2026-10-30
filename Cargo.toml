@@ -1,0 +1,46 @@
+[package]
+name = "codex-ccpanes"
+version = "0.1.0-beta.3"
+edition = "2021"
+license = "MIT"
+description = "Update-transparent launcher and diagnostics companion for Codex App and official CC-Panes"
+
+[workspace]
+members = [
+    ".",
+    "crates/coordination-core",
+    "crates/coordination-protocol",
+    "crates/coordination-store",
+    "crates/coordinator",
+    "crates/ccpanes-adapter",
+    "crates/coordination-mcp",
+]
+resolver = "2"
+
+[lib]
+name = "codex_ccpanes"
+path = "src/lib.rs"
+
+[[bin]]
+name = "codex-ccpanes"
+path = "src/main.rs"
+
+[[bin]]
+name = "CodexCCPanes"
+path = "src/bin/launcher.rs"
+
+[dependencies]
+anyhow = "1.0.102"
+clap = { version = "4.5.60", features = ["derive"] }
+hex = "0.4.3"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+sha2 = "0.10.9"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = [
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[dev-dependencies]
+tempfile = "3.27.0"

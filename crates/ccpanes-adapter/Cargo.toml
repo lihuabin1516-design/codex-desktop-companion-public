@@ -1,0 +1,20 @@
+[package]
+name = "ccpanes-adapter"
+version = "0.1.0-beta.3"
+edition = "2021"
+license = "MIT"
+description = "HTTP MCP adapter contract for official CC-Panes"
+
+[lib]
+name = "ccpanes_adapter"
+path = "src/lib.rs"
+
+[dependencies]
+coordination-core = { path = "../coordination-core" }
+hex = "0.4.3"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+sha2 = "0.10.9"
+
+[dev-dependencies]
+tempfile = "3.27.0"
