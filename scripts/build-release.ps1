@@ -260,6 +260,65 @@ $dependenciesManifest = [ordered]@{
 $dependenciesManifestJson = $dependenciesManifest | ConvertTo-Json -Depth 6
 Write-Utf8NoBomText -Path (Join-Path $PackageRoot "DEPENDENCIES.json") -Text $dependenciesManifestJson
 
+# Keep the actual license texts beside the dependency inventory.  A SPDX
+# identifier alone is not sufficient for a redistributable package: the
+# corresponding crate text must be available to recipients of the archive.
+$licenseRoot = Join-Path $PackageRoot "THIRD_PARTY_LICENSES"
+New-Item -ItemType Directory -Force -Path $licenseRoot | Out-Null
+$licensePackages = @()
+$externalPackages = @(
+    $metadata.packages |
+        Where-Object { $null -ne $_.source } |
+        Sort-Object name, version
+)
+foreach ($dependency in $externalPackages) {
+    $dependencyLicense = [string]$dependency.license
+    if ([string]::IsNullOrWhiteSpace($dependencyLicense)) {
+        throw "Dependency has no declared license: $($dependency.name) $($dependency.version)"
+    }
+    $manifestPath = [string]$dependency.manifest_path
+    if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
+        throw "Dependency manifest is missing: $manifestPath"
+    }
+    $sourceRoot = Split-Path -Parent $manifestPath
+    $licenseFiles = @(
+        Get-ChildItem -LiteralPath $sourceRoot -File -Force |
+            Where-Object {
+                $_.Name -match '^(?i:LICENSE|COPYING|NOTICE|UNLICENSE)([-_.].*)?$'
+            } |
+            Sort-Object Name
+    )
+    if ($licenseFiles.Count -lt 1) {
+        throw "No license text found for dependency: $($dependency.name) $($dependency.version)"
+    }
+    $safeName = (($dependency.name -replace '[^A-Za-z0-9._-]', '_') + "-" +
+        ($dependency.version -replace '[^A-Za-z0-9._-]', '_'))
+    $destinationRoot = Join-Path $licenseRoot $safeName
+    New-Item -ItemType Directory -Force -Path $destinationRoot | Out-Null
+    $relativeFiles = @()
+    foreach ($licenseFile in $licenseFiles) {
+        $destination = Join-Path $destinationRoot $licenseFile.Name
+        Copy-Item -LiteralPath $licenseFile.FullName -Destination $destination
+        $relativeFiles += $licenseFile.Name
+    }
+    $licensePackages += [ordered]@{
+        name = $dependency.name
+        version = $dependency.version
+        license = $dependencyLicense
+        source = $dependency.source
+        files = $relativeFiles
+        directory = $safeName
+    }
+}
+$licenseManifest = [ordered]@{
+    schemaVersion = 1
+    generatedFor = "CodexCCPanesCompanion"
+    productVersion = $Version
+    packages = $licensePackages
+}
+Write-Utf8NoBomText -Path (Join-Path $licenseRoot "MANIFEST.json") `
+    -Text ($licenseManifest | ConvertTo-Json -Depth 8)
+
 $checksumLines = foreach ($file in Get-ChildItem -LiteralPath $PackageRoot -Recurse -File |
     Where-Object { $_.Name -ne "SHA256SUMS" } |
     Sort-Object FullName) {

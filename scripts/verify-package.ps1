@@ -55,6 +55,7 @@ foreach ($required in @(
     "Uninstall-CodexCCPanes.cmd",
     "ARTIFACT_MANIFEST.json",
     "DEPENDENCIES.json",
+    "THIRD_PARTY_LICENSES\MANIFEST.json",
     "EXTERNAL_WINDOWS_ACCEPTANCE.md",
     "README.md",
     "RELEASE_NOTES_0.2.0-beta.1.md",
@@ -198,6 +199,53 @@ $dependencies = Get-Content -LiteralPath (Join-Path $PackageRoot "DEPENDENCIES.j
     ConvertFrom-Json
 if ($dependencies.schemaVersion -ne 1 -or @($dependencies.dependencies).Count -lt 1) {
     throw "Dependency manifest is empty or invalid."
+}
+
+$licenseRoot = Join-Path $PackageRoot "THIRD_PARTY_LICENSES"
+$licenseManifest = Get-Content -LiteralPath (Join-Path $licenseRoot "MANIFEST.json") -Raw |
+    ConvertFrom-Json
+if ($licenseManifest.schemaVersion -ne 1 -or
+    $licenseManifest.productVersion -ne $PackageVersion -or
+    @($licenseManifest.packages).Count -lt 1) {
+    throw "Third-party license manifest is empty or invalid."
+}
+$dependencyKeys = [System.Collections.Generic.HashSet[string]]::new()
+foreach ($dependency in @($dependencies.dependencies) |
+    Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_.source) }) {
+    [void]$dependencyKeys.Add("$($dependency.name)@$($dependency.version)")
+}
+$licensedKeys = [System.Collections.Generic.HashSet[string]]::new()
+$licensedFiles = [System.Collections.Generic.HashSet[string]]::new()
+foreach ($licensed in @($licenseManifest.packages)) {
+    $key = "$($licensed.name)@$($licensed.version)"
+    if (-not $licensedKeys.Add($key)) {
+        throw "Duplicate third-party license entry: $key"
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$licensed.license) -or
+        [string]::IsNullOrWhiteSpace([string]$licensed.directory)) {
+        throw "Incomplete third-party license entry: $key"
+    }
+    foreach ($licenseFile in @($licensed.files)) {
+        $relative = Join-Path (Join-Path "THIRD_PARTY_LICENSES" $licensed.directory) ([string]$licenseFile)
+        if ([System.IO.Path]::IsPathRooted($relative) -or $relative.Contains("..")) {
+            throw "Unsafe third-party license path: $relative"
+        }
+        $fullPath = Join-Path $PackageRoot $relative
+        if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+            throw "Third-party license text missing: $relative"
+        }
+        if (-not $licensedFiles.Add($relative)) {
+            throw "Duplicate third-party license file: $relative"
+        }
+    }
+    if (@($licensed.files).Count -lt 1) {
+        throw "Third-party license entry has no text files: $key"
+    }
+}
+if ($dependencyKeys.Count -ne $licensedKeys.Count -or
+    @($dependencyKeys | Where-Object { -not $licensedKeys.Contains($_) }).Count -gt 0 -or
+    @($licensedKeys | Where-Object { -not $dependencyKeys.Contains($_) }).Count -gt 0) {
+    throw "Third-party license manifest does not match external dependencies."
 }
 
 $expected = @{}
