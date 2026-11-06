@@ -84,18 +84,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "paneforge-adapter"
-version = "0.1.0-beta.3"
-dependencies = [
- "coordination-core",
- "hex",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
-]
-
-[[package]]
 name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -179,11 +167,11 @@ dependencies = [
 name = "coordination-mcp"
 version = "0.1.0-beta.3"
 dependencies = [
- "paneforge-adapter",
  "coordination-core",
  "coordination-protocol",
  "coordination-store",
  "coordinator",
+ "paneforge-adapter",
  "serde",
  "serde_json",
  "tempfile",
@@ -215,11 +203,11 @@ dependencies = [
 name = "coordinator"
 version = "0.1.0-beta.3"
 dependencies = [
- "paneforge-adapter",
  "coordination-core",
  "coordination-protocol",
  "coordination-store",
  "hex",
+ "paneforge-adapter",
  "serde",
  "serde_json",
  "sha2",
@@ -399,6 +387,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
 
 [[package]]
+name = "paneforge-adapter"
+version = "0.1.0-beta.3"
+dependencies = [
+ "coordination-core",
+ "hex",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+]
+
+[[package]]
 name = "pkg-config"
 version = "0.3.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -439,9 +439,9 @@ dependencies = [
 
 [[package]]
 name = "rusqlite"
-version = "0.41.0"
+version = "0.41.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c026b4444579e8d754556c6c75d040d69c4a44283cdb648ab8a8d5965c2cfa8"
+checksum = "da9bba6f3506135e120a6586df05be18b48d18896600646a4bec8f993d91a594"
 dependencies = [
  "bitflags",
  "fallible-iterator",
