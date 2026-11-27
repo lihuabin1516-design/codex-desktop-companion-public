@@ -54,9 +54,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.104"
+version = "1.0.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
+checksum = "2cb931c189b85683d69a5cfad41d4d418671e1ac413dd209f3f2fc31e3cfd902"
 
 [[package]]
 name = "bitflags"
@@ -81,18 +81,6 @@ checksum = "5add81bb678e6cb321aff7fa0dc7689ad82b112dbc032cea19f91d6b8e3582b9"
 dependencies = [
  "find-msvc-tools",
  "shlex",
-]
-
-[[package]]
-name = "paneforge-adapter"
-version = "0.1.0-beta.3"
-dependencies = [
- "coordination-core",
- "hex",
- "serde",
- "serde_json",
- "sha2",
- "tempfile",
 ]
 
 [[package]]
@@ -179,11 +167,11 @@ dependencies = [
 name = "coordination-mcp"
 version = "0.1.0-beta.3"
 dependencies = [
- "paneforge-adapter",
  "coordination-core",
  "coordination-protocol",
  "coordination-store",
  "coordinator",
+ "paneforge-adapter",
  "serde",
  "serde_json",
  "tempfile",
@@ -215,11 +203,11 @@ dependencies = [
 name = "coordinator"
 version = "0.1.0-beta.3"
 dependencies = [
- "paneforge-adapter",
  "coordination-core",
  "coordination-protocol",
  "coordination-store",
  "hex",
+ "paneforge-adapter",
  "serde",
  "serde_json",
  "sha2",
@@ -397,6 +385,18 @@ name = "once_cell_polyfill"
 version = "1.70.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "384b8ab6d37215f3c5301a95a4accb5d64aa607f1fcb26a11b5303878451b4fe"
+
+[[package]]
+name = "paneforge-adapter"
+version = "0.1.0-beta.3"
+dependencies = [
+ "coordination-core",
+ "hex",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+]
 
 [[package]]
 name = "pkg-config"
